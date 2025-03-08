@@ -1,0 +1,15 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model QRCode {
+  id        String   @id @default(cuid())
+  content   String
+  format    String
+  scannedAt DateTime @default(now())
+}
