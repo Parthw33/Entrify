@@ -1,9 +1,18 @@
+"use client";
+
+import { auth } from "@/auth";
+import InstallPWA from "@/components/installPWA";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Scan, BarChart3, Shield } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
 
 export default function Home() {
+  const session = useSession().data;
+
+  console.log(session);
   const features = [
     {
       icon: <Scan className="h-8 w-8" />,
