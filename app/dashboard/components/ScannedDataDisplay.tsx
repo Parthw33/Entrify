@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
 
 interface ScannedDataProps {
   scanResult: string;
@@ -14,7 +15,28 @@ export default function ScannedDataDisplay({
   onReset,
 }: ScannedDataProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<boolean | null>(null);
   const parsedData = JSON.parse(scanResult);
+  const { anubandh_id } = parsedData;
+
+  // Fetch approval status when component mounts
+  useEffect(() => {
+    const fetchApprovalStatus = async () => {
+      try {
+        const response = await fetch(
+          `/api/userEntry?anubandh_id=${anubandh_id}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch approval status");
+
+        const data = await response.json();
+        setApprovalStatus(data.approvalStatus);
+      } catch (error) {
+        console.error("Error fetching approval status:", error);
+      }
+    };
+
+    fetchApprovalStatus();
+  }, [anubandh_id]);
 
   const handleApprove = async () => {
     setIsSubmitting(true);
@@ -24,12 +46,13 @@ export default function ScannedDataDisplay({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(parsedData),
+        body: JSON.stringify({ ...parsedData, approvalStatus: true }),
       });
 
       if (!response.ok) throw new Error("Failed to submit");
 
       alert("User approved successfully!");
+      setApprovalStatus(true); // Update status in UI
       onReset();
     } catch (error) {
       console.error("Error:", error);
@@ -39,13 +62,28 @@ export default function ScannedDataDisplay({
     }
   };
 
+  // Status is considered pending when it's false or null
+  const isPending = approvalStatus === false || approvalStatus === null;
+
   return (
-    <Card>
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Scanned QR Code Data</CardTitle>
+        <CardTitle className="text-center">Scanned QR Code Data</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="p-4 bg-muted rounded-lg">
+        {parsedData.image_url && (
+          <div className="flex justify-center mb-4">
+            <Image
+              src={parsedData.image_url}
+              alt={`Photo of ${parsedData.name}`}
+              width={200}
+              height={200}
+              className="rounded-md object-cover"
+            />
+          </div>
+        )}
+
+        <div className="space-y-2">
           <p>
             <strong>ID:</strong> {parsedData.anubandh_id}
           </p>
@@ -73,12 +111,36 @@ export default function ScannedDataDisplay({
           <p>
             <strong>About:</strong> {parsedData.about}
           </p>
+          <p>
+            <strong>Approval Status:</strong>{" "}
+            <span
+              className={`font-semibold ${
+                approvalStatus === true ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {approvalStatus === true ? "Approved" : "Pending"}
+            </span>
+          </p>
         </div>
-        <div className="flex space-x-4">
-          <Button onClick={handleApprove} disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Approve"}
-          </Button>
-          <Button variant="outline" onClick={onReset}>
+
+        <div className="flex justify-between mt-6">
+          {isPending ? (
+            <Button
+              onClick={handleApprove}
+              disabled={isSubmitting}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isSubmitting ? "Submitting..." : "Approve"}
+            </Button>
+          ) : (
+            <Button
+              disabled
+              className="bg-green-600 opacity-50 cursor-not-allowed text-white"
+            >
+              Approved
+            </Button>
+          )}
+          <Button onClick={onReset} variant="outline">
             Scan Again
           </Button>
         </div>

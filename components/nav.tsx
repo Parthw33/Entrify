@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ModeToggle } from "./mode-toggle";
 import { Button } from "./ui/button";
+import { signIn } from "next-auth/react";
 
 export function Nav() {
   const pathname = usePathname();
@@ -23,7 +24,7 @@ export function Nav() {
               href="/"
               className="text-lg font-semibold text-foreground mr-8"
             >
-              SaaS Platform
+              स्नेहबंध पंढरपूर २०२५
             </Link>
             <div className="hidden md:ml-10 md:flex md:space-x-8">
               {navigation.map((link) => (
@@ -43,8 +44,15 @@ export function Nav() {
           </div>
           <div className="flex items-center space-x-4">
             {/* Login Button */}
-            <Link href="/login">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Link href="/">
+              <Button
+                onClick={() =>
+                  signIn("google", {
+                    callbackUrl: "https://snehband-pandharpur-2025.vercel.app",
+                  })
+                }
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 Login
               </Button>
             </Link>

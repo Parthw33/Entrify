@@ -43,7 +43,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async redirect({ url, baseUrl }) {
-      return `${baseUrl}/dashboard`; // Redirect user to dashboard after login
+      return `${baseUrl}/dashboard`; 
     },
 
     async authorized({ auth, request: { nextUrl } }) {
@@ -64,7 +64,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
 
   pages: {
-    signIn: "/login",
     error: "/",
   },
 

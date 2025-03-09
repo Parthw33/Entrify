@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileType, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  FileType,
+  CheckCircle,
+  Users,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 
@@ -13,6 +20,21 @@ export default function Admin() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileData, setFileData] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0 });
+
+  // Fetch profile statistics
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/profiles/stats");
+        const data = await res.json();
+        setStats(data);
+      } catch (error) {
+        console.error("Error fetching profile stats:", error);
+      }
+    }
+    fetchStats();
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -54,14 +76,38 @@ export default function Admin() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      "text/csv": [".csv"],
-    },
+    accept: { "text/csv": [".csv"] },
     multiple: false,
   });
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto py-10 space-y-6">
+      {/* Analytics Dashboard */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="p-4 flex items-center gap-4">
+          <Users className="h-10 w-10 text-blue-500" />
+          <div>
+            <h3 className="text-lg font-semibold">Total Profiles</h3>
+            <p className="text-xl font-bold">{stats.total}</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-4">
+          <UserCheck className="h-10 w-10 text-green-500" />
+          <div>
+            <h3 className="text-lg font-semibold">Approved</h3>
+            <p className="text-xl font-bold">{stats.approved}</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-4">
+          <UserX className="h-10 w-10 text-red-500" />
+          <div>
+            <h3 className="text-lg font-semibold">Pending Approval</h3>
+            <p className="text-xl font-bold">{stats.pending}</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* CSV Upload Section */}
       <Card>
         <CardHeader>
           <CardTitle>CSV File Upload</CardTitle>
@@ -106,43 +152,6 @@ export default function Admin() {
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <span className="text-sm">Upload complete</span>
-              </div>
-              <div className="border rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-muted">
-                        {Object.keys(fileData[0]).map((header) => (
-                          <th
-                            key={header}
-                            className="px-4 py-2 text-left font-medium"
-                          >
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {fileData.slice(0, 5).map((row, index) => (
-                        <tr
-                          key={index}
-                          className="border-t border-muted-foreground/10"
-                        >
-                          {Object.values(row).map((cell: any, cellIndex) => (
-                            <td key={cellIndex} className="px-4 py-2">
-                              {cell}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {fileData.length > 5 && (
-                  <div className="p-2 bg-muted/50 text-center text-sm text-muted-foreground">
-                    Showing 5 of {fileData.length} rows
-                  </div>
-                )}
               </div>
               <Button className="w-full">Process Data</Button>
             </div>

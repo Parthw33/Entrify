@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { QrCode, History } from "lucide-react";
+import { QrCode, History, LogOut } from "lucide-react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useEffect } from "react";
 import ScannedDataDisplay from "./components/ScannedDataDisplay";
+import { signOut } from "next-auth/react";
 
 export default function Dashboard() {
   const [scanResult, setScanResult] = useState<string | null>(null);
@@ -15,7 +16,16 @@ export default function Dashboard() {
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
       "qr-reader",
-      { fps: 10, qrbox: { width: 250, height: 250 } },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        // Configure video constraints to use back camera
+        videoConstraints: {
+          facingMode: "environment", // Use back camera
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      },
       false
     );
 
@@ -42,6 +52,17 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto py-10">
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          onClick={() => signOut()}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </Button>
+      </div>
+
       <Tabs defaultValue="scanner" className="space-y-4">
         <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
           <TabsTrigger value="scanner">
@@ -60,7 +81,6 @@ export default function Dashboard() {
               <CardTitle>QR Code Scanner</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div id="qr-reader" className="w-full max-w-md mx-auto" />
               {scanResult ? (
                 <ScannedDataDisplay
                   scanResult={scanResult}

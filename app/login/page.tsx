@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ImSpinner8 } from "react-icons/im";
 import { useTheme } from "next-themes";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +29,7 @@ export default function LoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // After successful authentication, redirect to dashboard
-      router.push("/dashboard");
+      // router.push("/dashboard");
     } catch (error) {
       console.error("Google sign-in failed:", error);
       setIsLoading(false);
@@ -47,7 +48,7 @@ export default function LoginPage() {
         </h1>
 
         <button
-          onClick={handleGoogleSignIn}
+          onClick={() => signIn("google")}
           disabled={isLoading}
           className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-4 py-2 text-gray-700 dark:text-gray-200 font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-600 hover:shadow-sm transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
         >

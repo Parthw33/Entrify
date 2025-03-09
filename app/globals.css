@@ -73,5 +73,5 @@
 }
 
 .gradient-bg {
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.2) 100%);
+  background: linear-gradient(135deg, #852c1f 0%, rgba(133, 44, 31, 0.2) 100%);
 }

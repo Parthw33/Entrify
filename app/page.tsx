@@ -41,25 +41,33 @@ export default function Home() {
           <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-primary to-secondary opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" />
         </div>
 
-        <div className="mx-auto max-w-7xl px-6 pb-24 pt-5 sm:pb-32 lg:flex lg:px-8 lg:py-40">
-          <div className="mx-auto max-w-2xl flex-shrink-0 lg:mx-0 lg:max-w-xl lg:pt-8">
+        <div className="mx-auto max-w-7xl px-6 pb-24 pt-5 sm:pb-32 lg:px-8 lg:py-40">
+          {/* Banner Image - Wide and Above Heading */}
+          <div className="w-full mb-12">
+            <img
+              src="https://res.cloudinary.com/ddrxbg3h9/image/upload/v1741503397/Sneh_melava_brpsgc.png"
+              alt="Banner image"
+              className="w-full h-auto rounded-xl shadow-xl"
+            />
+          </div>
+
+          <div className="mx-auto text-center max-w-3xl">
             <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-              Modern SaaS Platform for Business Excellence
+              आर्य वैश्य कोमटी समाज पंढरपूर संचलित स्नेहबंध पंढरपूर २०२५
             </h1>
-            <p className="mt-6 text-lg leading-8 text-muted-foreground">
-              Transform your business operations with our advanced QR code
-              scanning and data management platform. Streamline processes and
-              gain valuable insights.
+            <p className="mt-6 text-lg leading-8 text-muted-foreground mx-auto">
+              स्व. सुरेश (आबा) कौलवार यांच्या स्मरणार्थ आर्य वैश्य कोमटी समाज,
+              पंढरपूर संचलित स्नेहबंध २०२५
             </p>
-            <div className="mt-10 flex items-center gap-x-6">
+            <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link href="/dashboard">
                 <Button size="lg" className="gap-2">
                   Get Started <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/admin">
+              <Link href="/register">
                 <Button variant="outline" size="lg">
-                  Admin Panel
+                  Register New
                 </Button>
               </Link>
             </div>
