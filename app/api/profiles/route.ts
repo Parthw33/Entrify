@@ -1,44 +1,43 @@
-export const dynamic = "force-dynamic"; 
+import { PrismaClient } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+const prisma = new PrismaClient();
 
-export async function GET(req: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(req.url);
-    const status = url.searchParams.get("status");
+    const url = new URL(request.nextUrl);
+    const id = url.searchParams.get("id");
 
-    let profiles;
-    if (status === "all") {
-      profiles = await prisma.profile.findMany();
-    } else if (status === "approved") {
-      profiles = await prisma.profile.findMany({
-        where: { approvalStatus: true },
-      });
-    } else if (status === "pending") {
-      profiles = await prisma.profile.findMany({
-        where: { approvalStatus: false },
-      });
-    } else {
-      const totalProfiles = await prisma.profile.count();
-      const approvedProfiles = await prisma.profile.count({
-        where: { approvalStatus: true },
-      });
-      const pendingProfiles = totalProfiles - approvedProfiles;
-
-      return NextResponse.json({
-        total: totalProfiles,
-        approved: approvedProfiles,
-        pending: pendingProfiles,
-      });
+    if (!id) {
+      return NextResponse.json({ error: "ID parameter is required" }, { status: 400 });
     }
 
-    return NextResponse.json({ profiles });
+    const profile = await prisma.profile.findUnique({
+      where: { anuBandhId: id },
+      select: {
+        id: true,
+        anuBandhId: true,
+        name: true,
+        mobileNumber: true,
+        email: true,
+        dateOfBirth: true,
+        birthTime: true,
+        birthPlace: true,
+        education: true,
+        photo: true,
+        createdAt: true,
+        updatedAt: true,
+        approvalStatus: true,
+      },
+    });
+
+    if (!profile) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(profile);
   } catch (error) {
-    console.error("Error fetching profiles:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch profiles" },
-      { status: 500 }
-    );
+    console.error("Error fetching profile:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

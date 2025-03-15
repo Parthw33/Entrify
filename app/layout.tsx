@@ -21,8 +21,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Nav />
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <Nav />
+            {children}
+          </SessionProvider>
           <Toaster />
         </ThemeProvider>
       </body>
