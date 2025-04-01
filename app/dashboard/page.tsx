@@ -21,6 +21,7 @@ import {
   Search,
   User,
   CheckCircle,
+  UserSearch,
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import ScannedDataDisplay from "./components/ScannedDataDisplay";
@@ -31,6 +32,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import UserTable from "../admin/components/allUserTable";
+import UsersTableWithSkeleton from "../admin/components/usersTableWithSkeleton";
 
 interface Profile {
   id: string;
@@ -392,7 +395,7 @@ export default function Dashboard() {
       </div>
 
       <Tabs defaultValue="scanner" className="space-y-4">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
           <TabsTrigger value="scanner">
             <QrCode className="mr-2 h-4 w-4" />
             Scanner
@@ -400,6 +403,10 @@ export default function Dashboard() {
           <TabsTrigger value="history">
             <History className="mr-2 h-4 w-4" />
             By Anubandh
+          </TabsTrigger>
+          <TabsTrigger value="mobile">
+            <UserSearch className="mr-2 h-4 w-4" />
+            By MobileNumber
           </TabsTrigger>
         </TabsList>
 
@@ -564,11 +571,12 @@ export default function Dashboard() {
                     </div>
                   </CardHeader>
 
-                  <CardContent>
-                    <div className="flex flex-col md:flex-row gap-6">
-                      <div className="flex flex-col items-center">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col space-y-6">
+                      {/* Photo section - centered on mobile, left-aligned on desktop */}
+                      <div className="flex justify-center md:justify-start">
                         {profileData.photo ? (
-                          <Avatar className="h-32 w-32 border-2 border-slate-200">
+                          <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-slate-200">
                             <AvatarImage
                               src={profileData.photo}
                               alt={`Photo of ${profileData.name}`}
@@ -578,23 +586,28 @@ export default function Dashboard() {
                             </AvatarFallback>
                           </Avatar>
                         ) : (
-                          <Avatar className="h-32 w-32 border-2 border-slate-200">
+                          <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-slate-200">
                             <AvatarFallback>
-                              <User size={32} />
+                              <User className="h-8 w-8 md:h-10 md:w-10" />
                             </AvatarFallback>
                           </Avatar>
                         )}
                       </div>
 
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4">
+                      {/* Profile information */}
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                           <p className="text-sm text-muted-foreground">Name</p>
                           <p className="font-medium">{profileData.name}</p>
                         </div>
+
                         <div>
                           <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{profileData.email}</p>
+                          <p className="font-medium break-words">
+                            {profileData.email}
+                          </p>
                         </div>
+
                         <div>
                           <p className="text-sm text-muted-foreground">
                             Mobile
@@ -603,20 +616,25 @@ export default function Dashboard() {
                             {profileData.mobileNumber}
                           </p>
                         </div>
+
                         <div>
                           <p className="text-sm text-muted-foreground">
                             Date of Birth
                           </p>
                           <p className="font-medium">
-                            {profileData.dateOfBirth}
+                            {new Date(
+                              profileData.dateOfBirth
+                            ).toLocaleDateString("en-GB")}
                           </p>
                         </div>
+
                         <div>
                           <p className="text-sm text-muted-foreground">
                             Birth Time
                           </p>
                           <p className="font-medium">{profileData.birthTime}</p>
                         </div>
+
                         <div>
                           <p className="text-sm text-muted-foreground">
                             Birth Place
@@ -625,7 +643,8 @@ export default function Dashboard() {
                             {profileData.birthPlace}
                           </p>
                         </div>
-                        <div className="col-span-2">
+
+                        <div className="sm:col-span-2">
                           <p className="text-sm text-muted-foreground">
                             Education
                           </p>
@@ -650,6 +669,10 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="mobile">
+          <UsersTableWithSkeleton />
         </TabsContent>
 
         <TabsContent value="reports">

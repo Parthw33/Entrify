@@ -1,11 +1,11 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import UserTable from "./allUserTable";
-import { Profile } from "./approvedProfileRow";
+import { Profile, Profile1 } from "./approvedProfileRow";
 import { useState, useEffect } from "react";
 
 export default function UsersTableWithSkeleton() {
-  const [users, setUsers] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<Profile1[]>([]);
   const [isTableLoading, setIsTableLoading] = useState(true);
 
   useEffect(() => {

@@ -4,13 +4,13 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const profiles = await prisma.profile.findMany({
+    const profiles = await prisma.profileCsv.findMany({
       where: {
         approvalStatus: true
       },
       select: {
         id: true,
-        anuBandhId: true,
+        anubandhId: true,
         name: true,
         mobileNumber: true,
         email: true,
@@ -18,7 +18,6 @@ export async function GET() {
         birthTime: true,
         birthPlace: true,
         education: true,
-        photo: true,
         createdAt: true,
         updatedAt: true,
         approvalStatus: true

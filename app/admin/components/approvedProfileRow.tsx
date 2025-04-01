@@ -19,6 +19,25 @@ export interface Profile {
   updatedAt: string;
 }
 
+export interface Profile1 {
+  id: string;
+  anubandhId: string;
+  attendeeCount: number;
+  name: string;
+  mobileNumber: string;
+  email: string;
+  dateOfBirth?: string;
+  birthTime?: string;
+  birthPlace?: string;
+  education?: string;
+  photo?: string;
+  permanentAddress?: string;
+  currentAddress?: string;
+  approvalStatus: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ApprovedProfileRowProps {
   profile: Profile;
 }

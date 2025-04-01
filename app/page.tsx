@@ -8,6 +8,7 @@ import { ArrowRight, Scan, BarChart3, Shield } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 
 export default function Home() {
   const session = useSession().data;
@@ -44,10 +45,12 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-6 pb-24 pt-5 sm:pb-32 lg:px-8 lg:py-40">
           {/* Banner Image - Wide and Above Heading */}
           <div className="w-full mb-12">
-            <img
+            <Image
               src="https://res.cloudinary.com/ddrxbg3h9/image/upload/v1741503397/Sneh_melava_brpsgc.png"
               alt="Banner image"
               className="w-full h-auto rounded-xl shadow-xl"
+              width={1920}
+              height={1080}
             />
           </div>
 

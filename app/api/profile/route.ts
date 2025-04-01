@@ -9,9 +9,9 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     
     // Create the profile in the database
-    const profile = await prisma.profile.create({
+    const profile = await prisma.profileCsv.create({
       data: {
-        anuBandhId: data.contractId,
+        anubandhId: data.contractId,
         name: data.name,
         mobileNumber: data.mobileNumber,
         email: data.email,
@@ -19,8 +19,12 @@ export async function POST(request: NextRequest) {
         birthTime: data.birthTime,
         birthPlace: data.birthPlace,
         education: data.education,
-        aboutYourself: data.aboutYourself,
-        photo: data.photo, // Cloudinary URL
+        aboutSelf: data.aboutYourself,
+        permanentAddress: data.address,
+        timestamp: new Date(), // Add this property
+        maritalStatus: '', // Add this property
+        currentAddress: '', // Add this property
+        photo: data.photo, // Add this property
       },
     });
 

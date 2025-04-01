@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const totalProfiles = await prisma.profile.count();
-    const approvedProfiles = await prisma.profile.count({
+    const totalProfiles = await prisma.profileCsv.count();
+    const approvedProfiles = await prisma.profileCsv.count({
       where: { approvalStatus: true },
     });
     const pendingProfiles = totalProfiles - approvedProfiles;
