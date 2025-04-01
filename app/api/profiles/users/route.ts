@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   try {
-    const allUsers = await prisma.profile.findMany();
+    const allUsers = await prisma.profileCsv.findMany();
 
     return NextResponse.json({ allUsers,total: allUsers.length });
   } catch (error) {

@@ -5,6 +5,26 @@ import React, { useState, useRef, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
+import { z } from "zod";
+
+const registrationSchema = z.object({
+  anubandh_id: z.string().min(1, "Anubandh ID is required"),
+  name: z.string().min(1, "Name is required"),
+  mobile: z
+    .string()
+    .regex(
+      /^[987]\d{9}$/,
+      "Mobile number must be 10 digits and start with 9, 8, or 7"
+    ),
+  email: z.string().email("Invalid email format"),
+  dob: z.string().optional(),
+  birth_time: z.string().optional(),
+  birth_place: z.string().optional(),
+  education: z.string().optional(),
+  about: z.string().optional(),
+  address: z.string().optional(),
+  photo: z.any().optional(),
+});
 
 interface FormData {
   anubandh_id: string;
@@ -16,6 +36,7 @@ interface FormData {
   birth_place: string;
   education: string;
   about: string;
+  address: string;
   photo: File | null;
 }
 
@@ -31,9 +52,11 @@ const RegistrationForm: React.FC = () => {
     birth_place: "",
     education: "",
     about: "",
+    address: "",
     photo: null,
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [qrData, setQrData] = useState("");
@@ -87,6 +110,18 @@ const RegistrationForm: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
+
+    const validationResult = registrationSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const newErrors: Record<string, string> = {};
+      validationResult.error.errors.forEach((error) => {
+        newErrors[error.path[0]] = error.message;
+      });
+      setErrors(newErrors);
+      setLoading(false);
+      return;
+    }
 
     try {
       // Upload image to Cloudinary if photo exists
@@ -106,6 +141,7 @@ const RegistrationForm: React.FC = () => {
         birthPlace: formData.birth_place,
         education: formData.education,
         aboutYourself: formData.about,
+        address: formData.address,
         photo: photoUrl,
       };
 
@@ -144,7 +180,15 @@ const RegistrationForm: React.FC = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email: formData.email, qrData: qrDataString }),
+          body: JSON.stringify({
+            email: formData.email,
+            qrData: qrDataString,
+            name: formData.name,
+            anuBandhId: formData.anubandh_id,
+            mobileNumber: formData.mobile,
+            address: formData.address,
+            education: formData.education,
+          }),
         });
 
         const result = await emailResponse.json();
@@ -173,66 +217,68 @@ const RegistrationForm: React.FC = () => {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Form fields remain the same */}
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="anubandh_id">
-            अनुबंध आयडी (Anubandh ID)*
-          </label>
+        {/* Anubandh ID */}
+        <div>
+          <label>अनुबंध आयडी (Anubandh ID)*</label>
           <input
             type="text"
-            id="anubandh_id"
             name="anubandh_id"
             value={formData.anubandh_id}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
+            placeholder="Enter Anubandh ID"
+            className="w-full p-2 border rounded"
           />
+          {errors.anubandh_id && (
+            <p className="text-red-500">{errors.anubandh_id}</p>
+          )}
         </div>
 
-        {/* ... other form fields ... */}
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="name">
-            वधू - वराचे नाव (Name)*
-          </label>
+        {/* Name */}
+        <div>
+          <label>वधू - वराचे नाव (Name)*</label>
           <input
             type="text"
-            id="name"
             name="name"
             value={formData.name}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
+            placeholder="Enter your Full name"
+            className="w-full p-2 border rounded"
           />
+          {errors.name && <p className="text-red-500">{errors.name}</p>}
         </div>
 
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="mobile">
-            मोबाईल नंबर (Mobile NO)*
-          </label>
+        {/* Mobile Number Validation */}
+        <div>
+          <label>मोबाईल नंबर (Mobile NO)*</label>
           <input
             type="tel"
-            id="mobile"
             name="mobile"
             value={formData.mobile}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+              if (value.length <= 10) {
+                setFormData((prev) => ({ ...prev, mobile: value }));
+              }
+            }}
+            maxLength={10}
+            placeholder="Enter your Mobile Number"
+            className="w-full p-2 border rounded"
           />
+          {errors.mobile && <p className="text-red-500">{errors.mobile}</p>}
         </div>
 
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="email">
-            ईमेल (Email)*
-          </label>
+        {/* Email Validation */}
+        <div>
+          <label>ईमेल (Email)*</label>
           <input
             type="email"
-            id="email"
             name="email"
+            placeholder="Enter your Email Address"
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
+            className="w-full p-2 border rounded"
           />
+          {errors.email && <p className="text-red-500">{errors.email}</p>}
         </div>
 
         <div className="form-group">
@@ -272,6 +318,20 @@ const RegistrationForm: React.FC = () => {
             id="birth_place"
             name="birth_place"
             value={formData.birth_place}
+            onChange={handleInputChange}
+            className="w-full p-2 border border-gray-300 rounded"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-1" htmlFor="address">
+            पत्ता (Address)
+          </label>
+          <input
+            type="text"
+            id="address"
+            name="address"
+            value={formData.address}
             onChange={handleInputChange}
             className="w-full p-2 border border-gray-300 rounded"
           />

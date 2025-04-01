@@ -98,9 +98,54 @@ model Profile {
   education      String?
   aboutYourself  String?
   photo          String?
+  address        String?
   approvalStatus Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   @@map("profiles")
+}
+
+model ProfileCsv {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  timestamp             DateTime
+  email                 String
+  gender                String?
+  attendeeCount         Int?
+  transactionId         String?
+  anubandhId            String   @unique
+  name                  String
+  mobileNumber          String
+  dateOfBirth           String
+  birthTime             String
+  birthPlace            String
+  education             String?
+  aboutSelf             String?
+  maritalStatus         String
+  firstGotra            String?
+  secondGotra           String?
+  currentAddress        String
+  permanentAddress      String
+  complexion            String?
+  height                String?
+  bloodGroup            String?
+  annualIncome          String?
+  fatherName            String?
+  fatherOccupation      String?
+  fatherMobile          String?
+  motherName            String?
+  motherOccupation      String?
+  motherTongue          String?
+  brothersDetails       String?
+  sistersDetails        String?
+  partnerExpectations   String?
+  expectedQualification String?
+  expectedIncome        String?
+  ageRange              String?
+  expectedHeight        String?
+  preferredCity         String?
+  photo                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  approvalStatus        Boolean  @default(false)
 }
