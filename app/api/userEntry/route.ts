@@ -13,8 +13,8 @@ export async function GET(req: Request) {
     console.log("Fetching user:", anubandh_id);
 
     // ✅ Use the correct field name: "anuBandhId"
-    const user = await prisma.profile.findUnique({
-      where: { anuBandhId: anubandh_id }, // Correct field name
+    const user = await prisma.profileCsv.findUnique({
+      where: { anubandhId: anubandh_id }, // Correct field name
       select: { approvalStatus: true },
     });
 
@@ -41,8 +41,8 @@ export async function POST(req: Request) {
 
     console.log("Updating approval status for:", anubandh_id);
 
-    const updatedUser = await prisma.profile.update({
-      where: { anuBandhId: anubandh_id },
+    const updatedUser = await prisma.profileCsv.update({
+      where: { anubandhId: anubandh_id },
       data: { approvalStatus: true }, // ✅ Update status to true
     });
 

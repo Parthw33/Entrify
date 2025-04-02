@@ -12,6 +12,7 @@ export async function GET() {
         id: true,
         anubandhId: true,
         name: true,
+        gender: true,
         mobileNumber: true,
         email: true,
         dateOfBirth: true,

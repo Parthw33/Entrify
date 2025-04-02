@@ -53,6 +53,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile1 | null>(null);
   const [approvalFilter, setApprovalFilter] = useState<string>("All");
+  const [dialogBox, setDialogBox] = useState(false);
 
   // Filter users based on search query and approval status
   const filteredUsers = users.filter((user) => {
@@ -78,6 +79,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
 
   const handleUserClick = (user: Profile1) => {
     setSelectedUser(user);
+    setDialogBox(true);
   };
 
   const handleApproveProfile = async () => {
@@ -110,6 +112,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
       alert("Profile approved successfully");
 
       setSelectedUser(null);
+      setDialogBox(false);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to approve profile";
@@ -165,8 +168,9 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
-                <TableHead>Name</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
                 <TableHead>Anubandh ID</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Mobile Number</TableHead>
                 <TableHead>Approval Status</TableHead>
@@ -189,28 +193,33 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                     className="hover:bg-slate-50 cursor-pointer"
                     onClick={() => handleUserClick(user)} // Handle user click to open modal
                   >
-                    <TableCell className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8 bg-slate-200">
-                        <AvatarFallback>
-                          {user.photo ? (
-                            <Image
-                              src={user.photo}
-                              width={50}
-                              height={50}
-                              alt="Profile"
-                            />
-                          ) : (
-                            user.name
-                              .split(" ")
-                              .map((part) => part[0])
-                              .join("")
-                              .toUpperCase()
-                          )}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{user.name}</span>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8 bg-slate-200">
+                          <AvatarFallback>
+                            {user.photo ? (
+                              <Image
+                                src={user.photo}
+                                width={50}
+                                height={50}
+                                alt="Profile"
+                              />
+                            ) : (
+                              user.name
+                                .split(" ")
+                                .map((part) => part[0])
+                                .join("")
+                                .toUpperCase()
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
                     </TableCell>
                     <TableCell>{user.anubandhId}</TableCell>
+                    <TableCell className="flex items-center gap-3">
+                      <span>{user.name}</span>
+                    </TableCell>
+
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.mobileNumber}</TableCell>
                     <TableCell>
@@ -285,15 +294,20 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
 
       {/* Dialog Box */}
       {selectedUser && (
-        <Dialog
-          open={Boolean(selectedUser)}
-          onOpenChange={() => setSelectedUser(null)}
-        >
+        <Dialog open={dialogBox} onOpenChange={setDialogBox}>
           <DialogTrigger />
-          <DialogContent className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+          <DialogContent
+            className={`max-w-md mx-auto p-6 bg-white rounded-lg shadow-md ${
+              selectedUser.gender === "MALE"
+                ? "bg-blue-500"
+                : selectedUser.gender === "FEMALE"
+                ? "bg-pink-400"
+                : ""
+            } text-white`}
+          >
             <DialogTitle>{selectedUser.name}</DialogTitle>
             <DialogDescription>
-              <div className="space-y-4">
+              <div className="space-y-4 text-black">
                 <p>
                   <strong>Anubandh ID:</strong> {selectedUser.anubandhId}
                 </p>
@@ -325,7 +339,9 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                   {selectedUser.permanentAddress || selectedUser.currentAddress}
                 </p>
                 <p>
-                  <strong>Attendee Count:</strong> {selectedUser.attendeeCount}
+                  <div className="text-lg font-bold">
+                    Attendee Count: {selectedUser.attendeeCount}
+                  </div>
                 </p>
               </div>
             </DialogDescription>

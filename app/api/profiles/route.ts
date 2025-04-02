@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         updatedAt: true,
         approvalStatus: true,
+        attendeeCount:true,
+        gender:true,
       },
     });
 

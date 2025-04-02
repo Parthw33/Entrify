@@ -24,6 +24,7 @@ export default function RootLayout({
           <SessionProvider>
             <Nav />
             {children}
+            <Toaster />
           </SessionProvider>
           <Toaster />
         </ThemeProvider>

@@ -5,9 +5,10 @@ import { Check, X } from "lucide-react";
 // Define the profile type
 export interface Profile {
   id: string;
-  anuBandhId: string;
+  anubandhId: string;
   name: string;
   mobileNumber: string;
+  gender: string;
   email: string;
   dateOfBirth?: string;
   birthTime?: string;
@@ -36,6 +37,7 @@ export interface Profile1 {
   approvalStatus: boolean;
   createdAt: string;
   updatedAt: string;
+  gender?: string;
 }
 
 interface ApprovedProfileRowProps {
@@ -45,13 +47,18 @@ interface ApprovedProfileRowProps {
 const ApprovedProfileRow: React.FC<ApprovedProfileRowProps> = ({ profile }) => {
   return (
     <TableRow key={profile.id}>
-      <TableCell className="font-medium">{profile.name}</TableCell>
-      <TableCell>{profile.anuBandhId}</TableCell>
-      <TableCell>{profile.email}</TableCell>
+      <TableCell>{profile.anubandhId}</TableCell>
+      <TableCell className="font-medium whitespace-nowrap">
+        {profile.name}
+      </TableCell>
+      <TableCell>{profile.gender}</TableCell>
       <TableCell>{profile.mobileNumber}</TableCell>
-      <TableCell>{profile.birthPlace || "N/A"}</TableCell>
+      <TableCell className="font-medium whitespace-nowrap">
+        {profile.birthPlace || "N/A"}
+      </TableCell>
       <TableCell>{profile.education || "N/A"}</TableCell>
-      <TableCell>
+      <TableCell>{profile.email}</TableCell>
+      <TableCell className="items-center justify-center">
         {profile.approvalStatus === true ? (
           <Check className="h-5 w-5 text-green-500" />
         ) : (

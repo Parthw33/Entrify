@@ -83,13 +83,20 @@ export default function ApprovedUsersDialog({
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="whitespace-nowrap">
+                    Anubandh ID
+                  </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Anubandh ID</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Mobile Number</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    Mobile Number
+                  </TableHead>
                   <TableHead>Birth Place</TableHead>
                   <TableHead>Education</TableHead>
-                  <TableHead>Approval Status</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    Approval Status
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

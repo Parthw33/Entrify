@@ -37,7 +37,7 @@ import UsersTableWithSkeleton from "../admin/components/usersTableWithSkeleton";
 
 interface Profile {
   id: string;
-  anuBandhId: string;
+  anubandhId: string;
   name: string;
   mobileNumber: string;
   email: string;
@@ -49,6 +49,7 @@ interface Profile {
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
   approvalStatus: boolean;
+  attendeeCount: number;
 }
 
 export default function Dashboard() {
@@ -62,6 +63,7 @@ export default function Dashboard() {
   const [scanMode, setScanMode] = useState<"camera" | "image">("camera");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState("scanner");
 
   useEffect(() => {
     // Initialize the scanner
@@ -245,6 +247,12 @@ export default function Dashboard() {
       prepareImageUploadUI();
     }
   };
+  useEffect(() => {
+    // Reset states or perform refresh actions here
+    setScanResult(null); // Reset scan results on tab switch
+    setAnubandhId(""); // Clear Anubandh ID search
+    setProfileData(null); // Reset profile data
+  }, [activeTab]);
 
   const handleScanModeChange = async (mode: "camera" | "image") => {
     if (mode === scanMode) {
@@ -345,13 +353,13 @@ export default function Dashboard() {
     }
 
     try {
-      const response = await fetch("/api/profiles/userApproval", {
+      const response = await fetch("/api/profile/userApproval", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: profileData.anuBandhId,
+          id: profileData.anubandhId,
           approvalStatus: true,
         }),
       });
@@ -394,26 +402,35 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <Tabs defaultValue="scanner" className="space-y-4">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
+      <Tabs
+        defaultValue="scanner"
+        className="space-y-4"
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value)}
+      >
+        <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3">
           <TabsTrigger value="scanner">
             <QrCode className="mr-2 h-4 w-4" />
             Scanner
           </TabsTrigger>
           <TabsTrigger value="history">
             <History className="mr-2 h-4 w-4" />
-            By Anubandh
+            By Anubandh ID
           </TabsTrigger>
           <TabsTrigger value="mobile">
             <UserSearch className="mr-2 h-4 w-4" />
-            By MobileNumber
+            By Name/Mobile No.
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="scanner">
           <Card>
-            <CardHeader>
-              <CardTitle>QR Code Scanner</CardTitle>
+            <CardHeader className="bg-slate-50 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">QR Code Scanner</CardTitle>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {cameraPermission === false && scanMode === "camera" ? (
@@ -482,13 +499,14 @@ export default function Dashboard() {
                     )}
 
                     {scanMode === "image" && !isScanning && (
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-2"
-                      >
-                        <Upload className="h-4 w-4" />
-                        Select Image
-                      </Button>
+                      <></>
+                      // <Button
+                      //   onClick={() => fileInputRef.current?.click()}
+                      //   className="flex items-center gap-2"
+                      // >
+                      //   {/* <Upload className="h-4 w-4" />
+                      //   Select Image */}
+                      // </Button>
                     )}
                   </div>
                 </>
@@ -650,6 +668,15 @@ export default function Dashboard() {
                           </p>
                           <p className="font-medium">{profileData.education}</p>
                         </div>
+
+                        <div className="sm:col-span-2">
+                          <p className="text-sm text-muted-foreground">
+                            Attendee Count:-
+                          </p>
+                          <p className="font-medium">
+                            {profileData.attendeeCount}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -673,18 +700,6 @@ export default function Dashboard() {
 
         <TabsContent value="mobile">
           <UsersTableWithSkeleton />
-        </TabsContent>
-
-        <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reports</CardTitle>
-              <CardDescription>View statistics and reports</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Reports dashboard will appear here.</p>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

@@ -13,6 +13,18 @@ export async function GET() {
       total: totalProfiles,
       approved: approvedProfiles,
       pending: pendingProfiles,
+      approvedFemaleStats: await prisma.profileCsv.count({
+        where: { gender: "FEMALE" , approvalStatus: true},
+      }),
+      approvedMaleStats: await prisma.profileCsv.count({
+        where: { gender: "MALE" , approvalStatus: true},
+      }),
+      totalFemaleStats: await prisma.profileCsv.count({
+        where: { gender: "FEMALE" },
+      }),
+      totalMaleStats: await prisma.profileCsv.count({
+        where: { gender: "MALE" },
+      }),
     });
   } catch (error) {
     return NextResponse.json(
