@@ -12,11 +12,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "ID parameter is required" }, { status: 400 });
     }
 
-    const profile = await prisma.profile.findUnique({
-      where: { anuBandhId: id },
+    const profile = await prisma.profileCsv.findUnique({
+      where: { anubandhId: id },
       select: {
         id: true,
-        anuBandhId: true,
+        anubandhId: true,
         name: true,
         mobileNumber: true,
         email: true,

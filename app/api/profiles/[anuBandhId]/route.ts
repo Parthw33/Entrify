@@ -7,13 +7,13 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.nextUrl);
   const id = url.searchParams.get("id")?.toString() ?? '';
 
-  const profile = await prisma.profile.findUnique({
+  const profile = await prisma.profileCsv.findUnique({
     where: {
-      anuBandhId: id,
+      anubandhId: id,
     },
     select: {
       id: true,
-      anuBandhId: true,
+      anubandhId: true,
       name: true,
       mobileNumber: true,
       email: true,

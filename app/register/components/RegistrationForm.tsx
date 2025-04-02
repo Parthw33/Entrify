@@ -364,7 +364,7 @@ const RegistrationForm: React.FC = () => {
           />
         </div>
 
-        <div className="form-group">
+        {/* <div className="form-group">
           <label className="block mb-1" htmlFor="photo">
             फोटो (Photo)
           </label>
@@ -392,7 +392,7 @@ const RegistrationForm: React.FC = () => {
               />
             </div>
           )}
-        </div>
+        </div> */}
 
         <div className="text-center">
           <button
