@@ -6,53 +6,105 @@ import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
 import { z } from "zod";
+import { registerProfile } from "@/app/actions/registerProfile";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import {
+  Upload,
+  User,
+  Calendar,
+  Clock,
+  MapPin,
+  Book,
+  Home,
+  Users,
+} from "lucide-react";
+import { sendEmail } from "@/app/actions/sendEmail";
 
 const registrationSchema = z.object({
-  anubandh_id: z.string().min(1, "Anubandh ID is required"),
+  anubandhId: z.string().min(1, "Anubandh ID is required"),
   name: z.string().min(1, "Name is required"),
-  mobile: z
+  mobileNumber: z
     .string()
     .regex(
       /^[987]\d{9}$/,
       "Mobile number must be 10 digits and start with 9, 8, or 7"
     ),
   email: z.string().email("Invalid email format"),
-  dob: z.string().optional(),
-  birth_time: z.string().optional(),
-  birth_place: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  birthTime: z.string().optional(),
+  birthPlace: z.string().optional(),
   education: z.string().optional(),
-  about: z.string().optional(),
+  aboutSelf: z.string().optional(),
   address: z.string().optional(),
+  firstGotra: z.string().optional(),
+  secondGotra: z.string().optional(),
+  annualIncome: z.string().optional(),
+  expectedIncome: z.string().optional(),
+  attendeeCount: z.number().min(1).optional(),
   photo: z.any().optional(),
+  gender: z.string().optional(),
 });
 
 interface FormData {
-  anubandh_id: string;
+  anubandhId: string;
   name: string;
-  mobile: string;
-  dob: string;
+  mobileNumber: string;
+  dateOfBirth: string;
   email: string;
-  birth_time: string;
-  birth_place: string;
+  birthTime: string;
+  birthPlace: string;
   education: string;
-  about: string;
+  aboutSelf: string;
   address: string;
+  firstGotra: string;
+  secondGotra: string;
+  annualIncome: string;
+  expectedIncome: string;
+  attendeeCount: number;
+  gender: string;
   photo: File | null;
 }
 
 const RegistrationForm: React.FC = () => {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
-    anubandh_id: "",
+    anubandhId: "",
     name: "",
-    mobile: "",
-    dob: "",
+    mobileNumber: "",
+    dateOfBirth: "",
     email: "",
-    birth_time: "",
-    birth_place: "",
+    birthTime: "",
+    birthPlace: "",
     education: "",
-    about: "",
+    aboutSelf: "",
     address: "",
+    firstGotra: "",
+    secondGotra: "",
+    annualIncome: "",
+    expectedIncome: "",
+    attendeeCount: 1,
+    gender: "",
     photo: null,
   });
 
@@ -67,6 +119,10 @@ const RegistrationForm: React.FC = () => {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -130,42 +186,33 @@ const RegistrationForm: React.FC = () => {
         photoUrl = await uploadToCloudinary(formData.photo);
       }
 
-      // Prepare data for MongoDB
-      const dataForDB = {
-        contractId: formData.anubandh_id,
+      // Use the server action to register the profile
+      const result = await registerProfile({
+        anubandhId: formData.anubandhId,
         name: formData.name,
-        mobileNumber: formData.mobile,
+        mobileNumber: formData.mobileNumber,
         email: formData.email,
-        dateOfBirth: formData.dob ? new Date(formData.dob).toISOString() : null,
-        birthTime: formData.birth_time,
-        birthPlace: formData.birth_place,
+        dateOfBirth: formData.dateOfBirth,
+        birthTime: formData.birthTime,
+        birthPlace: formData.birthPlace,
         education: formData.education,
-        aboutYourself: formData.about,
+        aboutSelf: formData.aboutSelf,
         address: formData.address,
         photo: photoUrl,
-      };
-
-      // Save to MongoDB using Prisma API route
-      const saveResponse = await fetch("/api/profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataForDB),
+        firstGotra: formData.firstGotra,
+        secondGotra: formData.secondGotra,
+        annualIncome: formData.annualIncome,
+        expectedIncome: formData.expectedIncome,
+        attendeeCount: formData.attendeeCount,
+        gender: formData.gender,
       });
-
-      if (!saveResponse.ok) {
-        throw new Error("Failed to save data to database");
-      }
-
-      const savedData = await saveResponse.json();
 
       // Create QR data (exclude photo file)
       const { photo, ...dataForQR } = formData;
       const qrDataObj = {
         ...dataForQR,
         photoUrl: photoUrl,
-        profileId: savedData.id,
+        profileId: result.profile.id,
       };
       const qrDataString = JSON.stringify(qrDataObj);
 
@@ -175,7 +222,7 @@ const RegistrationForm: React.FC = () => {
 
       // Send email with QR code
       try {
-        const emailResponse = await fetch("/api/send-email", {
+        const response = await fetch("/api/send-email", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -184,246 +231,417 @@ const RegistrationForm: React.FC = () => {
             email: formData.email,
             qrData: qrDataString,
             name: formData.name,
-            anuBandhId: formData.anubandh_id,
-            mobileNumber: formData.mobile,
+            anuBandhId: formData.anubandhId,
+            mobileNumber: formData.mobileNumber,
             address: formData.address,
             education: formData.education,
+            attendeeCount: formData.attendeeCount.toString(),
           }),
         });
 
-        const result = await emailResponse.json();
-        if (result.success) {
-          alert("Registration successful! QR code sent to your email!");
+        const emailResult = await response.json();
+        if (emailResult.success) {
+          toast.success("Registration successful! QR code sent to your email!");
         } else {
-          alert("Registration successful but failed to send email.");
+          toast.warning("Registration successful but failed to send email.");
         }
       } catch (error) {
         console.error("Email error:", error);
-        alert("Registration successful but failed to send email.");
+        toast.warning("Registration successful but failed to send email.");
       }
     } catch (error) {
       console.error("Error during submission:", error);
-      alert("Registration failed. Please try again.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Rest of your component remains the same
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-6 text-center">
-        नोंदणी फॉर्म / Registration Form
-      </h1>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Anubandh ID */}
-        <div>
-          <label>अनुबंध आयडी (Anubandh ID)*</label>
-          <input
-            type="text"
-            name="anubandh_id"
-            value={formData.anubandh_id}
-            onChange={handleInputChange}
-            placeholder="Enter Anubandh ID"
-            className="w-full p-2 border rounded"
-          />
-          {errors.anubandh_id && (
-            <p className="text-red-500">{errors.anubandh_id}</p>
-          )}
-        </div>
-
-        {/* Name */}
-        <div>
-          <label>वधू - वराचे नाव (Name)*</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            placeholder="Enter your Full name"
-            className="w-full p-2 border rounded"
-          />
-          {errors.name && <p className="text-red-500">{errors.name}</p>}
-        </div>
-
-        {/* Mobile Number Validation */}
-        <div>
-          <label>मोबाईल नंबर (Mobile NO)*</label>
-          <input
-            type="tel"
-            name="mobile"
-            value={formData.mobile}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-              if (value.length <= 10) {
-                setFormData((prev) => ({ ...prev, mobile: value }));
-              }
-            }}
-            maxLength={10}
-            placeholder="Enter your Mobile Number"
-            className="w-full p-2 border rounded"
-          />
-          {errors.mobile && <p className="text-red-500">{errors.mobile}</p>}
-        </div>
-
-        {/* Email Validation */}
-        <div>
-          <label>ईमेल (Email)*</label>
-          <input
-            type="email"
-            name="email"
-            placeholder="Enter your Email Address"
-            value={formData.email}
-            onChange={handleInputChange}
-            className="w-full p-2 border rounded"
-          />
-          {errors.email && <p className="text-red-500">{errors.email}</p>}
-        </div>
-
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="dob">
-            जन्म तारीख (Date Of Birth)
-          </label>
-          <input
-            type="date"
-            id="dob"
-            name="dob"
-            value={formData.dob}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="birth_time">
-            जन्म वेळ (Birth Time)
-          </label>
-          <input
-            type="time"
-            id="birth_time"
-            name="birth_time"
-            value={formData.birth_time}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="birth_place">
-            जन्म ठिकाण (Birth Place)
-          </label>
-          <input
-            type="text"
-            id="birth_place"
-            name="birth_place"
-            value={formData.birth_place}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="address">
-            पत्ता (Address)
-          </label>
-          <input
-            type="text"
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="education">
-            शिक्षण (Education)
-          </label>
-          <input
-            type="text"
-            id="education"
-            name="education"
-            value={formData.education}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="block mb-1" htmlFor="about">
-            स्वतः विषयी थोडक्यात माहिती (Brief information about yourself)
-          </label>
-          <textarea
-            id="about"
-            name="about"
-            value={formData.about}
-            onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded h-24"
-          />
-        </div>
-
-        {/* <div className="form-group">
-          <label className="block mb-1" htmlFor="photo">
-            फोटो (Photo)
-          </label>
-          <input
-            type="file"
-            id="photo"
-            name="photo"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            accept="image/*"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Upload 1 supported file. Max 10 MB.
-          </p>
-
-          {photoPreview && (
-            <div className="mt-2">
-              <Image
-                src={photoPreview}
-                alt="Preview"
-                width={100}
-                height={100}
-                className="object-cover rounded-md"
-              />
+    <div className="container mx-auto py-10">
+      <Card className="max-w-3xl mx-auto shadow-md">
+        <CardHeader className="bg-slate-50 border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">
+                नोंदणी फॉर्म / Registration Form
+              </CardTitle>
+              <CardDescription>
+                Fill in your details to register for the event
+              </CardDescription>
             </div>
-          )}
-        </div> */}
-
-        <div className="text-center">
-          <button
-            type="submit"
-            disabled={loading}
-            className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {loading ? "Submitting..." : "Submit"}
-          </button>
-        </div>
-      </form>
-
-      {submitted && qrData && (
-        <div className="mt-8 text-center">
-          <h2 className="text-xl font-bold mb-4">Your QR Code</h2>
-          <div className="flex justify-center">
-            <QRCodeSVG value={qrData} size={300} level="L" />
+            <Badge variant="outline" className="bg-blue-50 text-blue-700">
+              Registration
+            </Badge>
           </div>
-          <p className="mt-4 text-sm">
-            Scan this QR code to view your registration details or visit{" "}
-            <button
-              className="text-blue-500 underline"
-              onClick={() => router.push("/qr-code")}
-            >
-              registration details page
-            </button>
-          </p>
-        </div>
-      )}
+        </CardHeader>
+
+        {!submitted ? (
+          <form onSubmit={handleSubmit}>
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Anubandh ID */}
+                <div className="space-y-2">
+                  <Label htmlFor="anubandhId">
+                    अनुबंध आयडी (Anubandh ID)
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="anubandhId"
+                    name="anubandhId"
+                    value={formData.anubandhId}
+                    onChange={handleInputChange}
+                    placeholder="Enter Anubandh ID"
+                  />
+                  {errors.anubandhId && (
+                    <p className="text-red-500 text-sm">{errors.anubandhId}</p>
+                  )}
+                </div>
+
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    वधू - वराचे नाव (Name)
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter your Full name"
+                  />
+                  {errors.name && (
+                    <p className="text-red-500 text-sm">{errors.name}</p>
+                  )}
+                </div>
+
+                {/* Gender */}
+                <div className="space-y-2">
+                  <Label htmlFor="gender">स्त्री / पुरुष (Gender)</Label>
+                  <Select
+                    value={formData.gender}
+                    onValueChange={(value) =>
+                      handleSelectChange("gender", value)
+                    }
+                  >
+                    <SelectTrigger id="gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MALE">पुरुष (Male)</SelectItem>
+                      <SelectItem value="FEMALE">स्त्री (Female)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Mobile Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="mobileNumber">
+                    मोबाईल नंबर (Mobile NO)
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="mobileNumber"
+                    name="mobileNumber"
+                    type="tel"
+                    value={formData.mobileNumber}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (value.length <= 10) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          mobileNumber: value,
+                        }));
+                      }
+                    }}
+                    maxLength={10}
+                    placeholder="Enter your Mobile Number"
+                  />
+                  {errors.mobileNumber && (
+                    <p className="text-red-500 text-sm">
+                      {errors.mobileNumber}
+                    </p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">
+                    ईमेल (Email)<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Enter your Email Address"
+                  />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm">{errors.email}</p>
+                  )}
+                </div>
+
+                {/* Date of Birth */}
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth">
+                    <Calendar className="inline-block w-4 h-4 mr-1" />
+                    जन्म तारीख (Date Of Birth)
+                  </Label>
+                  <Input
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                {/* Birth Time */}
+                <div className="space-y-2">
+                  <Label htmlFor="birthTime">
+                    <Clock className="inline-block w-4 h-4 mr-1" />
+                    जन्म वेळ (Birth Time)
+                  </Label>
+                  <Input
+                    id="birthTime"
+                    name="birthTime"
+                    type="time"
+                    value={formData.birthTime}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                {/* Birth Place */}
+                <div className="space-y-2">
+                  <Label htmlFor="birthPlace">
+                    <MapPin className="inline-block w-4 h-4 mr-1" />
+                    जन्म ठिकाण (Birth Place)
+                  </Label>
+                  <Input
+                    id="birthPlace"
+                    name="birthPlace"
+                    value={formData.birthPlace}
+                    onChange={handleInputChange}
+                    placeholder="Enter your birth place"
+                  />
+                </div>
+
+                {/* Education */}
+                <div className="space-y-2">
+                  <Label htmlFor="education">
+                    <Book className="inline-block w-4 h-4 mr-1" />
+                    शिक्षण (Education)
+                  </Label>
+                  <Input
+                    id="education"
+                    name="education"
+                    value={formData.education}
+                    onChange={handleInputChange}
+                    placeholder="Enter your education details"
+                  />
+                </div>
+
+                {/* First Gotra */}
+                <div className="space-y-2">
+                  <Label htmlFor="firstGotra">पहिले गोत्र (First gotra)</Label>
+                  <Input
+                    id="firstGotra"
+                    name="firstGotra"
+                    value={formData.firstGotra}
+                    onChange={handleInputChange}
+                    placeholder="Enter your first gotra"
+                  />
+                </div>
+
+                {/* Second Gotra */}
+                <div className="space-y-2">
+                  <Label htmlFor="secondGotra">
+                    दुसरे गोत्र (Second gotra)
+                  </Label>
+                  <Input
+                    id="secondGotra"
+                    name="secondGotra"
+                    value={formData.secondGotra}
+                    onChange={handleInputChange}
+                    placeholder="Enter your second gotra"
+                  />
+                </div>
+
+                {/* Annual Income */}
+                <div className="space-y-2">
+                  <Label htmlFor="annualIncome">
+                    (वार्षिक उत्पन्न) Annual Income
+                  </Label>
+                  <Input
+                    id="annualIncome"
+                    name="annualIncome"
+                    value={formData.annualIncome}
+                    onChange={handleInputChange}
+                    placeholder="Enter your annual income"
+                  />
+                </div>
+
+                {/* Expected Income */}
+                <div className="space-y-2">
+                  <Label htmlFor="expectedIncome">
+                    वार्षिक उत्पन्न अपेक्षा (Expected Income)
+                  </Label>
+                  <Input
+                    id="expectedIncome"
+                    name="expectedIncome"
+                    value={formData.expectedIncome}
+                    onChange={handleInputChange}
+                    placeholder="Enter expected income"
+                  />
+                </div>
+
+                {/* Attendee Count */}
+                <div className="space-y-2">
+                  <Label htmlFor="attendeeCount">
+                    <Users className="inline-block w-4 h-4 mr-1" />
+                    मेहमानों की संख्या (Guest Count.)
+                  </Label>
+                  <Input
+                    id="attendeeCount"
+                    name="attendeeCount"
+                    type="number"
+                    min="1"
+                    value={formData.attendeeCount}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value) && value > 0) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          attendeeCount: value,
+                        }));
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Address */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="address">
+                    <Home className="inline-block w-4 h-4 mr-1" />
+                    पत्ता (Address)
+                  </Label>
+                  <Textarea
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    placeholder="Enter your address"
+                    rows={2}
+                  />
+                </div>
+
+                {/* About Self */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="aboutSelf">
+                    स्वतः विषयी थोडक्यात माहिती (Brief information about
+                    yourself)
+                  </Label>
+                  <Textarea
+                    id="aboutSelf"
+                    name="aboutSelf"
+                    value={formData.aboutSelf}
+                    onChange={handleInputChange}
+                    placeholder="Tell us about yourself"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Photo Upload */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="photo">फोटो (Photo)</Label>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <div
+                        className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-slate-50"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          Click to upload a photo (max 5MB)
+                        </p>
+                        <input
+                          type="file"
+                          id="photo"
+                          name="photo"
+                          ref={fileInputRef}
+                          onChange={handleFileChange}
+                          className="hidden"
+                          accept="image/*"
+                        />
+                      </div>
+                    </div>
+
+                    {photoPreview && (
+                      <div className="flex-shrink-0">
+                        <Avatar className="h-20 w-20 border-2 border-slate-200">
+                          <AvatarImage src={photoPreview} alt="Preview" />
+                          <AvatarFallback>
+                            <User className="h-10 w-10" />
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+
+            <CardFooter className="flex justify-end gap-2 border-t bg-slate-50 py-4">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {loading ? "Submitting..." : "Submit Registration"}
+              </Button>
+            </CardFooter>
+          </form>
+        ) : (
+          <CardContent className="pt-6 space-y-6">
+            <div className="text-center space-y-4">
+              <div className="rounded-lg bg-green-50 p-4 text-green-700">
+                <h2 className="text-xl font-semibold">
+                  Registration Successful!
+                </h2>
+                <p>Your profile has been registered successfully.</p>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                <h3 className="text-lg font-medium">Your QR Code</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Scan this QR code at the event for quick check-in
+                </p>
+                <div className="bg-white p-4 rounded-lg inline-block">
+                  <QRCodeSVG value={qrData} size={200} level="L" />
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground mt-4">
+                A copy of this QR code has been sent to your email address.
+              </p>
+
+              <Button
+                onClick={() => router.push("/qr-code")}
+                variant="outline"
+                className="mt-4"
+              >
+                View Registration Details
+              </Button>
+            </div>
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 };

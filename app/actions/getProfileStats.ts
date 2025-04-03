@@ -1,7 +1,8 @@
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+'use server'
 
-export async function GET() {
+import { prisma } from "@/lib/prisma";
+
+export async function getProfileStats() {
   try {
     const totalProfiles = await prisma.profileCsv.count();
     const approvedProfiles = await prisma.profileCsv.count({
@@ -9,15 +10,15 @@ export async function GET() {
     });
     const pendingProfiles = totalProfiles - approvedProfiles;
 
-    return NextResponse.json({
+    return {
       total: totalProfiles,
       approved: approvedProfiles,
       pending: pendingProfiles,
       approvedFemaleStats: await prisma.profileCsv.count({
-        where: { gender: "FEMALE" , approvalStatus: true},
+        where: { gender: "FEMALE", approvalStatus: true },
       }),
       approvedMaleStats: await prisma.profileCsv.count({
-        where: { gender: "MALE" , approvalStatus: true},
+        where: { gender: "MALE", approvalStatus: true },
       }),
       totalFemaleStats: await prisma.profileCsv.count({
         where: { gender: "FEMALE" },
@@ -25,11 +26,8 @@ export async function GET() {
       totalMaleStats: await prisma.profileCsv.count({
         where: { gender: "MALE" },
       }),
-    });
+    };
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch profile stats" },
-      { status: 500 }
-    );
+    throw new Error("Failed to fetch profile stats");
   }
-}
+} 

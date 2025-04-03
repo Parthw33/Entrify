@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
   if (!profile) {
     return NextResponse.json(
-      { error: "Profile not found" },
+      { error: "Anubandh Id not found" },
       { status: 404 }
     );
   }

@@ -42,6 +42,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"; // Assuming you have a Dialog component.
 import { Profile1 } from "./approvedProfileRow";
+import { approveUser } from "@/app/actions/approveUser";
+import { updateApprovalStatus } from "@/app/actions/updateApprovalStatus";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface UserTableProps {
   users: Profile1[];
@@ -54,6 +59,8 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
   const [selectedUser, setSelectedUser] = useState<Profile1 | null>(null);
   const [approvalFilter, setApprovalFilter] = useState<string>("All");
   const [dialogBox, setDialogBox] = useState(false);
+  const [introductionChecked, setIntroductionChecked] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter users based on search query and approval status
   const filteredUsers = users.filter((user) => {
@@ -79,44 +86,86 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
 
   const handleUserClick = (user: Profile1) => {
     setSelectedUser(user);
+    setIntroductionChecked(user.introductionStatus || false);
     setDialogBox(true);
   };
 
   const handleApproveProfile = async () => {
     if (!selectedUser) return;
+    setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/profile/userApproval", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: selectedUser.anubandhId,
-          approvalStatus: true,
-        }),
+      await updateApprovalStatus({
+        anubandhId: selectedUser.anubandhId,
+        attendeeCount: selectedUser.attendeeCount,
+        introductionStatus: introductionChecked,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.message || `Failed to approve: ${response.status}`
-        );
-      }
 
       setSelectedUser({
         ...selectedUser,
         approvalStatus: true,
+        introductionStatus: introductionChecked,
       });
 
-      alert("Profile approved successfully");
+      toast.success("Profile approved successfully");
 
-      setSelectedUser(null);
-      setDialogBox(false);
+      setTimeout(() => {
+        setDialogBox(false);
+      }, 1500);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to approve profile";
+      toast.error(errorMessage);
       console.error("Approval error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateIntroductionStatus = async () => {
+    if (!selectedUser) return;
+
+    // Only allow updates for approved profiles
+    if (!selectedUser.approvalStatus) {
+      toast.error(
+        "Profile must be approved before setting introduction status"
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await updateApprovalStatus({
+        anubandhId: selectedUser.anubandhId,
+        introductionStatus: introductionChecked,
+        attendeeCount: selectedUser.attendeeCount,
+      });
+
+      setSelectedUser({
+        ...selectedUser,
+        introductionStatus: introductionChecked,
+      });
+
+      toast.success(
+        introductionChecked
+          ? "Introduction status set successfully"
+          : "Introduction status removed successfully"
+      );
+
+      // Close dialog after a short delay to show success message
+      setTimeout(() => {
+        setDialogBox(false);
+      }, 1500);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to update introduction status";
+      toast.error(errorMessage);
+      console.error("Update error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -137,7 +186,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
         <div className="flex items-center gap-4">
           <Input
             type="text"
-            placeholder="Search by name, email, ID, or phone..."
+            placeholder="Search by name, email address, or phone..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -296,16 +345,18 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
       {selectedUser && (
         <Dialog open={dialogBox} onOpenChange={setDialogBox}>
           <DialogTrigger />
-          <DialogContent
-            className={`max-w-md mx-auto p-6 bg-white rounded-lg shadow-md ${
-              selectedUser.gender === "MALE"
-                ? "bg-blue-500"
-                : selectedUser.gender === "FEMALE"
-                ? "bg-pink-400"
-                : ""
-            } text-white`}
-          >
-            <DialogTitle>{selectedUser.name}</DialogTitle>
+          <DialogContent>
+            <div
+              className={`max-w-md mx-auto px-6 py-2 rounded-sm shadow-md ${
+                selectedUser.gender === "MALE"
+                  ? "bg-[#00FFFF] text-black"
+                  : selectedUser.gender === "FEMALE"
+                  ? "bg-pink-300 text-black"
+                  : ""
+              }`}
+            >
+              <DialogTitle>{selectedUser.name}</DialogTitle>
+            </div>
             <DialogDescription>
               <div className="space-y-4 text-black">
                 <p>
@@ -340,21 +391,78 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                 </p>
                 <p>
                   <div className="text-lg font-bold">
-                    Attendee Count: {selectedUser.attendeeCount}
+                    Guest Count: {selectedUser.attendeeCount}
                   </div>
                 </p>
+
+                {/* Introduction Status Checkbox - shown when profile is approved but introductionStatus is false, 
+                    OR when profile is not yet approved */}
+                {(selectedUser.approvalStatus &&
+                  !selectedUser.introductionStatus) ||
+                !selectedUser.approvalStatus ? (
+                  <div className="mt-4 border-t pt-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="introductionStatus"
+                        checked={introductionChecked}
+                        onCheckedChange={(checked) =>
+                          setIntroductionChecked(checked === true)
+                        }
+                      />
+                      <Label
+                        htmlFor="introductionStatus"
+                        className="font-medium cursor-pointer"
+                      >
+                        Interested for Introduction
+                      </Label>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* If already approved and has introduction status, show it as text */}
+                {selectedUser.approvalStatus &&
+                  selectedUser.introductionStatus && (
+                    <div className="text-lg font-bold text-green-600 flex items-center gap-2 mt-2">
+                      <CheckCircle className="h-5 w-5" />
+                      Interested for Introduction
+                    </div>
+                  )}
+
+                {/* Message to indicate introduction can be set during approval */}
+                {!selectedUser.approvalStatus && (
+                  <div className="text-gray-600 text-sm mt-1">
+                    <p>
+                      Introduction status will be saved when the profile is
+                      approved
+                    </p>
+                  </div>
+                )}
               </div>
             </DialogDescription>
-            <DialogFooter className="flex justify-end pt-4">
+            <DialogFooter className="flex justify-end pt-4 space-x-2">
               {!selectedUser.approvalStatus && (
                 <button
                   onClick={handleApproveProfile}
+                  disabled={isSubmitting}
                   className="gap-2 bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg flex items-center"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  Approve Profile
+                  {isSubmitting ? "Processing..." : "Approve Profile"}
                 </button>
               )}
+
+              {/* Update Introduction Status button - shown ONLY when profile is already approved but introductionStatus is false */}
+              {selectedUser.approvalStatus &&
+                !selectedUser.introductionStatus && (
+                  <button
+                    onClick={handleUpdateIntroductionStatus}
+                    disabled={isSubmitting}
+                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg flex items-center"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    {isSubmitting ? "Saving..." : "Set Introduction Status"}
+                  </button>
+                )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -34,23 +34,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import UserTable from "../admin/components/allUserTable";
 import UsersTableWithSkeleton from "../admin/components/usersTableWithSkeleton";
-
-interface Profile {
-  id: string;
-  anubandhId: string;
-  name: string;
-  mobileNumber: string;
-  email: string;
-  dateOfBirth: string; // ISO date format
-  birthTime: string;
-  birthPlace: string;
-  education: string;
-  photo: string; // URL of the photo
-  createdAt: string; // ISO timestamp
-  updatedAt: string; // ISO timestamp
-  approvalStatus: boolean;
-  attendeeCount: number;
-}
+import { getProfile } from "@/app/actions/getProfile";
+import { approveUser } from "@/app/actions/approveUser";
+import { updateApprovalStatus } from "@/app/actions/updateApprovalStatus";
+import type { Profile } from "@/app/actions/getProfile";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export default function Dashboard() {
   const [scanResult, setScanResult] = useState<string | null>(null);
@@ -64,6 +54,14 @@ export default function Dashboard() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("scanner");
+
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [anubandhId, setAnubandhId] = useState<string>("");
+  const [searchError, setSearchError] = useState<string>("");
+  const [profileData, setProfileData] = useState<Profile | null>(null);
+  const [introductionChecked, setIntroductionChecked] =
+    useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     // Initialize the scanner
@@ -287,12 +285,14 @@ export default function Dashboard() {
     }
   };
 
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [anubandhId, setAnubandhId] = useState<string>("");
-  const [searchError, setSearchError] = useState<string>("");
-  const [profileData, setProfileData] = useState<Profile | null>(null);
+  // Set introduction status when profile data is loaded
+  useEffect(() => {
+    if (profileData) {
+      setIntroductionChecked(!!profileData.introductionStatus);
+    }
+  }, [profileData]);
 
-  // Improved search function with better error handling and type safety
+  // Updated search function using server action
   const handleSearchByAnubandhId = async (): Promise<void> => {
     if (!anubandhId.trim()) {
       setSearchError("Please enter an Anubandh ID");
@@ -304,31 +304,7 @@ export default function Dashboard() {
     setProfileData(null);
 
     try {
-      const response = await fetch(
-        `/api/profiles?id=${encodeURIComponent(anubandhId.trim())}`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Server error: ${response.status} ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        setSearchError("No profile found with this Anubandh ID");
-        return;
-      }
-
-      // Handle both array or single object responses
-      const profile: Profile = Array.isArray(data) ? data[0] : data;
+      const profile = await getProfile(anubandhId.trim());
       setProfileData(profile);
     } catch (error) {
       const errorMessage =
@@ -340,7 +316,7 @@ export default function Dashboard() {
     }
   };
 
-  // Improved approval function with better error handling
+  // Updated approval function to use updateApprovalStatus instead of approveUser
   const handleApproveProfile = async (): Promise<void> => {
     if (!profileData) {
       setSearchError("No profile selected for approval");
@@ -352,38 +328,72 @@ export default function Dashboard() {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      const response = await fetch("/api/profile/userApproval", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: profileData.anubandhId,
-          approvalStatus: true,
-        }),
+      // Use updateApprovalStatus to include introduction status
+      await updateApprovalStatus({
+        anubandhId: profileData.anubandhId,
+        attendeeCount: profileData.attendeeCount || 1,
+        introductionStatus: introductionChecked,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.message || `Failed to approve: ${response.status}`
-        );
-      }
-
-      // Update local state to reflect the approval
+      // Update local state to reflect the approval and introduction status
       setProfileData({
         ...profileData,
         approvalStatus: true,
+        introductionStatus: introductionChecked,
       });
 
-      // Show success message (could be replaced with a toast notification)
-      alert("Profile approved successfully");
+      toast.success("Profile approved successfully");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to approve profile";
       setSearchError(errorMessage);
+      toast.error(errorMessage);
       console.error("Approval error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Function to update introduction status for already approved profiles
+  const handleUpdateIntroductionStatus = async (): Promise<void> => {
+    if (!profileData) {
+      setSearchError("No profile selected");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await updateApprovalStatus({
+        anubandhId: profileData.anubandhId,
+        attendeeCount: profileData.attendeeCount || 1,
+        introductionStatus: introductionChecked,
+      });
+
+      // Update local state
+      setProfileData({
+        ...profileData,
+        introductionStatus: introductionChecked,
+      });
+
+      toast.success(
+        introductionChecked
+          ? "Introduction status set successfully"
+          : "Introduction status removed successfully"
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to update introduction status";
+      setSearchError(errorMessage);
+      toast.error(errorMessage);
+      console.error("Update error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -531,7 +541,7 @@ export default function Dashboard() {
                   variant="outline"
                   className="bg-blue-50 text-blue-700 hover:bg-blue-50"
                 >
-                  Admin Panel
+                  Search
                 </Badge>
               </div>
             </CardHeader>
@@ -671,27 +681,91 @@ export default function Dashboard() {
 
                         <div className="sm:col-span-2">
                           <p className="text-sm text-muted-foreground">
-                            Attendee Count:-
+                            Guest Count:-
                           </p>
                           <p className="font-medium">
-                            {profileData.attendeeCount}
+                            {profileData.attendeeCount || 1}
                           </p>
+                        </div>
+
+                        {/* Introduction Status - show checkbox or status */}
+                        <div className="sm:col-span-2 mt-2">
+                          {/* If already approved and has introduction status, show it as text */}
+                          {profileData.approvalStatus &&
+                            profileData.introductionStatus && (
+                              <div>
+                                <p className="text-sm text-muted-foreground">
+                                  Introduction Status
+                                </p>
+                                <p className="font-medium text-green-600 flex items-center gap-1">
+                                  <CheckCircle className="h-4 w-4" />
+                                  Interested for Introduction
+                                </p>
+                              </div>
+                            )}
+
+                          {/* For profiles that are either not approved, or approved but without introduction status */}
+                          {(!profileData.approvalStatus ||
+                            (profileData.approvalStatus &&
+                              !profileData.introductionStatus)) && (
+                            <div className="border-t pt-3 mt-1">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="introductionStatus"
+                                  checked={introductionChecked}
+                                  onCheckedChange={(checked) =>
+                                    setIntroductionChecked(checked === true)
+                                  }
+                                  disabled={isSubmitting}
+                                />
+                                <Label
+                                  htmlFor="introductionStatus"
+                                  className="font-medium cursor-pointer"
+                                >
+                                  Interested for Introduction
+                                </Label>
+                              </div>
+                              {!profileData.approvalStatus && (
+                                <p className="text-gray-600 text-sm mt-1">
+                                  Introduction status will be saved when the
+                                  profile is approved
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </CardContent>
 
-                  {!profileData.approvalStatus && (
-                    <CardFooter className="flex justify-end pt-2 pb-4">
+                  <CardFooter className="flex justify-end space-x-2 pt-2 pb-4">
+                    {/* Show approve button for profiles that are not approved */}
+                    {!profileData.approvalStatus && (
                       <Button
                         onClick={handleApproveProfile}
+                        disabled={isSubmitting}
                         className="gap-2 bg-green-600 hover:bg-green-700"
                       >
                         <CheckCircle className="h-4 w-4" />
-                        Approve Profile
+                        {isSubmitting ? "Processing..." : "Approve Profile"}
                       </Button>
-                    </CardFooter>
-                  )}
+                    )}
+
+                    {/* Show update introduction status button for approved profiles without introduction status */}
+                    {profileData.approvalStatus &&
+                      !profileData.introductionStatus && (
+                        <Button
+                          onClick={handleUpdateIntroductionStatus}
+                          disabled={isSubmitting}
+                          className="gap-2 bg-blue-600 hover:bg-blue-700"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          {isSubmitting
+                            ? "Saving..."
+                            : "Set Introduction Status"}
+                        </Button>
+                      )}
+                  </CardFooter>
                 </Card>
               )}
             </CardContent>

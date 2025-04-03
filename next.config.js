@@ -6,6 +6,11 @@ const nextConfig = {
   images: {
     domains: ["res.cloudinary.com"],
   },
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
 };
 
 module.exports = nextConfig;

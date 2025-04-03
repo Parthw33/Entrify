@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
   try {
-    const { email, qrData, name, anuBandhId, mobileNumber, address, education } = await req.json();
+    const { email, qrData, name, anuBandhId, mobileNumber, address, education ,attendeeCount} = await req.json();
 
     if (!email || !qrData || !name) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -34,8 +34,9 @@ export async function POST(req: Request) {
 
           <!-- Welcome Message -->
           <div style="padding: 20px;">
-            <h2 style="color: #333;">Dear ${name},</h2>
-            <p>Thank you for registering! Below are your registration details:</p>
+            <h2 style="color: #333;">प्रिय ${name},</h2>
+            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">पंढरपूर येथील <strong>"स्नेह बंध मेळावा"</strong> कार्यक्रमात आपली यशस्वीरित्या नोंदणी झाली आहे. आपण आपल्या ओळखपत्रासाठी QR कोड सोबत जोडला आहे.</p>
+            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">कृपया खालील माहिती तपासून पहा:</p>
           </div>
 
           <!-- User Details Table -->
@@ -45,17 +46,29 @@ export async function POST(req: Request) {
             <tr><td style="border: 1px solid #ddd; padding: 8px;"><strong>Mobile Number:</strong></td><td style="border: 1px solid #ddd; padding: 8px;">${mobileNumber || "—"}</td></tr>
             <tr><td style="border: 1px solid #ddd; padding: 8px;"><strong>Address:</strong></td><td style="border: 1px solid #ddd; padding: 8px;">${address || "—"}</td></tr>
             <tr><td style="border: 1px solid #ddd; padding: 8px;"><strong>Education:</strong></td><td style="border: 1px solid #ddd; padding: 8px;">${education || "—"}</td></tr>
+            <tr><td style="border: 1px solid #ddd; padding: 8px;"><strong>Guest Count:</strong></td><td style="border: 1px solid #ddd; padding: 8px;">${attendeeCount || "—"}</td></tr>
           </table>
 
+          <div style="padding: 20px;">
+            <h2 style="color: #333;">मेळावा स्थान:- </h2>
+            <p style="margin-bottom: 10px;">स्वर्गीय प्रभाकरराव अबाजी पटंगे प्रेक्षागृह, राम मंदिरासमोर, गाडगे महाराज पुतळ्याजवळ, बसस्थानकाच्या मागे, श्री विठ्ठल रूक्मिणी मंदिर, पंढरपूर</p>
+            <a href="https://maps.app.goo.gl/c7hYiGzkfDVZDWrT9?g_st=aw" style="display: inline-block; background-color: #4285F4; color: white; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 10px;">
+              <span style="vertical-align: middle;">📌 Google Maps वर स्थान पहा</span>
+            </a>
+            <p style="margin-top: 15px; font-style: italic; color: #666;">दिनांक: 13 April 2024 | वेळ: सकाळी 9:00 ते संध्याकाळी 6:00</p>
+          </div>
+
           <!-- QR Code -->
-          <div style="text-align: center; margin: 20px 0;">
-            <p style="font-weight: bold;">Scan this QR code to access your registration details:</p>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}" alt="QR Code" style="border-radius: 10px;"/>
+          <div style="text-align: center; margin: 20px 0; background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+            <h3 style="color: #333; margin-bottom: 15px;">आपला प्रवेश QR कोड</h3>
+            <p style="font-weight: bold; margin-bottom: 15px;">कृपया हा QR कोड मेळाव्यात प्रवेश करताना स्कॅन करण्यासाठी सादर करावा:</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}" alt="QR Code" style="border-radius: 10px; border: 5px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"/>
+            <p style="margin-top: 15px; color: #666;">मेळाव्यात येण्यापूर्वी हा ईमेल सेव्ह करा किंवा QR कोड स्क्रीनशॉट घ्या.</p>
           </div>
 
           <!-- Footer -->
           <div style="text-align: center; font-size: 12px; color: #777; padding: 10px; background: #f8f9fa; border-top: 1px solid #ddd;">
-            <p>Designed & Developed By <strong>DataElegance Solutions</strong></p>
+            <p>Designed & Developed By <strong>DataElegance Solutions LLP</strong></p>
             <p>Rajendra Wattamwar & Sulbha Wattamwar</p>
           </div>
         </div>

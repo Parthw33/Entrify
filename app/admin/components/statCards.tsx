@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, UserCheck, UserX } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getProfileStats } from "@/app/actions/getProfileStats";
 
 interface StatsProps {
   onApprovedClick: () => void;
@@ -23,8 +24,8 @@ export default function StatCards({ onApprovedClick }: StatsProps) {
     async function fetchStats() {
       setIsLoading(true);
       try {
-        const res = await fetch("/api/profiles/stats");
-        const data = await res.json();
+        const data = await getProfileStats();
+        console.log("Fetched stats:", data);
         setStats(data);
       } catch (error) {
         console.error("Error fetching profile stats:", error);

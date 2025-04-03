@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import { uploadCsv } from "@/app/actions/uploadCsv";
 
 interface UploadStats {
   total: number;
@@ -93,27 +94,15 @@ export default function CsvUploader() {
     setUploadStats(null);
 
     try {
-      // Convert data back to CSV for upload
+      // Convert data back to CSV
       const csv = Papa.unparse(fileData);
-      const csvBlob = new Blob([csv], { type: "text/csv" });
-      const formData = new FormData();
-      formData.append("file", csvBlob, fileName || "profiles.csv");
 
-      const response = await fetch("/api/upload/csv", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to upload data");
-      }
+      const result = await uploadCsv(csv);
 
       setUploadStats({
         total: fileData.length,
-        processed: result.message.match(/Processed (\d+)/)?.[1] || 0,
-        errors: result.errors?.length || 0,
+        processed: result.processedCount,
+        errors: result.errorCount,
       });
 
       toast.success("Data uploaded successfully");

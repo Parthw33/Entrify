@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
@@ -15,7 +16,11 @@ export async function GET(req: Request) {
     // ✅ Use the correct field name: "anuBandhId"
     const user = await prisma.profileCsv.findUnique({
       where: { anubandhId: anubandh_id }, // Correct field name
-      select: { approvalStatus: true },
+      select: { 
+        approvalStatus: true,
+        attendeeCount: true,
+        introductionStatus: true
+      },
     });
 
     if (!user) {
@@ -23,7 +28,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ approvalStatus: user.approvalStatus });
+    return NextResponse.json({ 
+      approvalStatus: user.approvalStatus,
+      attendeeCount: user.attendeeCount,
+      introductionStatus: user.introductionStatus
+    });
   } catch (error) {
     console.error("GET Error:", error);
     return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
@@ -33,7 +42,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { anubandh_id } = body; // Extract anubandh_id from request body
+    const { anubandh_id, attendeeCount, introductionStatus } = body; // Extract all fields from request body
 
     if (!anubandh_id) {
       return NextResponse.json({ error: "Missing anubandh_id" }, { status: 400 });
@@ -43,11 +52,19 @@ export async function POST(req: Request) {
 
     const updatedUser = await prisma.profileCsv.update({
       where: { anubandhId: anubandh_id },
-      data: { approvalStatus: true }, // ✅ Update status to true
+      data: { 
+        approvalStatus: true,
+        // Only update these fields if they were provided
+        ...(attendeeCount !== undefined && { attendeeCount: Number(attendeeCount) }),
+        ...(introductionStatus !== undefined && { introductionStatus: Boolean(introductionStatus) })
+      },
     });
 
+    revalidatePath("/admin"); 
+    revalidatePath("/dashboard"); 
     return NextResponse.json({ message: "User approved successfully", user: updatedUser });
   } catch (error) {
+    await prisma.$disconnect(); // Ensure disconnection in case of error
     console.error("POST Error:", error);
     return NextResponse.json({ error: "Failed to update approval status" }, { status: 500 });
   }

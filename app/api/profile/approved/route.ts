@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 export const POST = async (req: NextRequest) => {
   try {
+
+    await prisma.$connect();
     const body = await req.json();
     const { id } = body;
 
@@ -15,6 +18,8 @@ export const POST = async (req: NextRequest) => {
       data: { approvalStatus: true },
     });
 
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
     return NextResponse.json({ message: "User approved successfully" }, { status: 200 });
   } catch (error) {
     console.error("Error approving user:", error);

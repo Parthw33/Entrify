@@ -1,6 +1,6 @@
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Check, X } from "lucide-react";
+import { Check, Cross, X } from "lucide-react";
 
 // Define the profile type
 export interface Profile {
@@ -18,6 +18,8 @@ export interface Profile {
   approvalStatus: boolean;
   createdAt: string;
   updatedAt: string;
+  attendeeCount?: number;
+  introductionStatus?: boolean;
 }
 
 export interface Profile1 {
@@ -38,6 +40,7 @@ export interface Profile1 {
   createdAt: string;
   updatedAt: string;
   gender?: string;
+  introductionStatus?: boolean;
 }
 
 interface ApprovedProfileRowProps {
@@ -58,11 +61,18 @@ const ApprovedProfileRow: React.FC<ApprovedProfileRowProps> = ({ profile }) => {
       </TableCell>
       <TableCell>{profile.education || "N/A"}</TableCell>
       <TableCell>{profile.email}</TableCell>
-      <TableCell className="items-center justify-center">
+      <TableCell className="text-center">
         {profile.approvalStatus === true ? (
-          <Check className="h-5 w-5 text-green-500" />
+          <Check className="h-5 w-5 text-green-500 mx-auto" />
         ) : (
-          <X className="h-5 w-5 text-red-500" />
+          <X className="h-5 w-5 text-red-500 mx-auto" />
+        )}
+      </TableCell>
+      <TableCell className="text-center">
+        {profile.introductionStatus ? (
+          <Check className="h-5 w-5 text-green-500 mx-auto" />
+        ) : (
+          <X className="h-5 w-5 text-red-500 mx-auto" />
         )}
       </TableCell>
     </TableRow>

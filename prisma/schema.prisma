@@ -148,4 +148,5 @@ model ProfileCsv {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   approvalStatus        Boolean  @default(false)
+  introductionStatus    Boolean  @default(false)
 }

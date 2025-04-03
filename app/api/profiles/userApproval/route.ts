@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 
 export const POST = async (req: NextRequest) => {
@@ -15,6 +17,7 @@ export const POST = async (req: NextRequest) => {
       data: { approvalStatus: true },
     });
 
+    revalidatePath("/admin");
     return NextResponse.json({ message: "User approved successfully" }, { status: 200 });
   } catch (error) {
     console.error("Error approving user:", error);

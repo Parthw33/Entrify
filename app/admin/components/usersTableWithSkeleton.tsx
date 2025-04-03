@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import UserTable from "./allUserTable";
 import { Profile, Profile1 } from "./approvedProfileRow";
 import { useState, useEffect } from "react";
+import { getAllUsers } from "@/app/actions/getAllUsers";
 
 export default function UsersTableWithSkeleton() {
   const [users, setUsers] = useState<Profile1[]>([]);
@@ -12,8 +13,7 @@ export default function UsersTableWithSkeleton() {
     async function fetchUsers() {
       setIsTableLoading(true);
       try {
-        const res = await fetch("/api/profiles/users");
-        const data = await res.json();
+        const data = await getAllUsers();
         setUsers(data.allUsers);
       } catch (error) {
         console.error("Error fetching users:", error);

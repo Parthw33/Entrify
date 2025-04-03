@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import ApprovedProfileRow, { Profile } from "./approvedProfileRow";
+import { getApprovedProfiles } from "@/app/actions/getApprovedProfiles";
 
 interface ApprovedUsersDialogProps {
   isOpen: boolean;
@@ -28,21 +29,10 @@ export default function ApprovedUsersDialog({
   const [approvedProfiles, setApprovedProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const getApprovedProfiles = async () => {
+  const fetchApprovedProfiles = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/profiles/approved", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await getApprovedProfiles();
       setApprovedProfiles(data.profiles);
     } catch (error) {
       console.error("Failed to fetch approved profiles:", error);
@@ -53,7 +43,7 @@ export default function ApprovedUsersDialog({
 
   // Fetch data when dialog opens
   if (isOpen && !loading && approvedProfiles.length === 0) {
-    getApprovedProfiles();
+    fetchApprovedProfiles();
   }
 
   return (
@@ -94,8 +84,9 @@ export default function ApprovedUsersDialog({
                   <TableHead>Birth Place</TableHead>
                   <TableHead>Education</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
                   <TableHead className="whitespace-nowrap">
-                    Approval Status
+                    Introduction
                   </TableHead>
                 </TableRow>
               </TableHeader>
