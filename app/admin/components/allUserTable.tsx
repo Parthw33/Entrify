@@ -31,7 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Check, CheckCircle, X } from "lucide-react";
+import { Check, CheckCircle, X, User, Users } from "lucide-react";
 import Image from "next/image";
 import {
   Dialog,
@@ -58,11 +58,12 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile1 | null>(null);
   const [approvalFilter, setApprovalFilter] = useState<string>("All");
+  const [genderFilter, setGenderFilter] = useState<string>("All");
   const [dialogBox, setDialogBox] = useState(false);
   const [introductionChecked, setIntroductionChecked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter users based on search query and approval status
+  // Filter users based on search query, approval status, and gender
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -75,7 +76,12 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
       (approvalFilter === "Approved" && user.approvalStatus) ||
       (approvalFilter === "Pending" && !user.approvalStatus);
 
-    return matchesSearch && matchesApprovalStatus;
+    const matchesGender =
+      genderFilter === "All" ||
+      (genderFilter === "Male" && user.gender === "MALE") ||
+      (genderFilter === "Female" && user.gender === "FEMALE");
+
+    return matchesSearch && matchesApprovalStatus && matchesGender;
   });
 
   // Pagination
@@ -183,7 +189,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
             {filteredUsers.length} Users Found
           </Badge>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Input
             type="text"
             placeholder="Search by name, email address, or phone..."
@@ -194,22 +200,55 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
             }}
             className="w-full md:w-1/3"
           />
-          <Select
-            value={approvalFilter}
-            onValueChange={(value) => {
-              setApprovalFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="h-8 w-40">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Statuses</SelectItem>
-              <SelectItem value="Approved">Approved</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select
+              value={approvalFilter}
+              onValueChange={(value) => {
+                setApprovalFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-40">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Statuses</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={genderFilter}
+              onValueChange={(value) => {
+                setGenderFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-32">
+                <SelectValue placeholder="All Genders" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Genders</SelectItem>
+                <SelectItem value="Male">
+                  <span className="flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-100">
+                      <User size={12} className="text-blue-600" />
+                    </span>
+                    <span className="text-blue-600 font-medium">Male</span>
+                  </span>
+                </SelectItem>
+                <SelectItem value="Female">
+                  <span className="flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-pink-100">
+                      <User size={12} className="text-pink-600" />
+                    </span>
+                    <span className="text-pink-600 font-medium">Female</span>
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -220,6 +259,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                 <TableHead className="w-[50px]"></TableHead>
                 <TableHead>Anubandh ID</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Gender</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Mobile Number</TableHead>
                 <TableHead>Approval Status</TableHead>
@@ -229,7 +269,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
               {currentUsers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={7}
                     className="text-center py-8 text-muted-foreground"
                   >
                     No users found
@@ -265,10 +305,25 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                       </div>
                     </TableCell>
                     <TableCell>{user.anubandhId}</TableCell>
-                    <TableCell className="flex items-center gap-3">
+                    <TableCell>
                       <span>{user.name}</span>
                     </TableCell>
-
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          user.gender === "MALE"
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-pink-50 text-pink-700"
+                        }
+                      >
+                        {user.gender === "MALE"
+                          ? "Male"
+                          : user.gender === "FEMALE"
+                          ? "Female"
+                          : "N/A"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.mobileNumber}</TableCell>
                     <TableCell>
@@ -361,6 +416,14 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
               <div className="space-y-4 text-black">
                 <p>
                   <strong>Anubandh ID:</strong> {selectedUser.anubandhId}
+                </p>
+                <p>
+                  <strong>Gender:</strong>{" "}
+                  {selectedUser.gender === "MALE"
+                    ? "Male"
+                    : selectedUser.gender === "FEMALE"
+                    ? "Female"
+                    : "N/A"}
                 </p>
                 <p>
                   <strong>Email:</strong> {selectedUser.email}

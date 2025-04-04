@@ -35,6 +35,8 @@ export interface Profile1 {
   education?: string;
   photo?: string;
   permanentAddress?: string;
+  firstGotra?: string;
+  secondGotra?: string;
   currentAddress?: string;
   approvalStatus: boolean;
   createdAt: string;

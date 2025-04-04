@@ -79,12 +79,43 @@ export default function Dashboard() {
         // Get available cameras
         const devices = await Html5Qrcode.getCameras();
         if (devices && devices.length > 0) {
-          // Prefer back camera if available
-          const backCamera =
-            devices.find((device) =>
-              device.label.toLowerCase().includes("back")
-            ) || devices[0];
-          setCameraId(backCamera.id);
+          console.log("Available cameras:", devices);
+
+          // Try to find the main back camera using common naming patterns
+          // Main back cameras often have labels containing these terms
+          const mainBackCameraPatterns = [
+            /back(?!\s+ultra)/i, // "back" but not followed by "ultra"
+            /rear(?!\s+ultra)/i, // "rear" but not followed by "ultra"
+            /(?<!ultra\s+)back/i, // "back" not preceded by "ultra"
+            /(?<!ultra\s+)rear/i, // "rear" not preceded by "ultra"
+            /camera2/i, // Often used for main camera
+            /main camera/i, // Explicit "main camera"
+            /primary/i, // "primary" camera
+          ];
+
+          // First try to find main camera using the patterns
+          let mainCamera = devices.find((device) =>
+            mainBackCameraPatterns.some((pattern) => pattern.test(device.label))
+          );
+
+          // If no specific main camera found, fall back to first "back" camera
+          if (!mainCamera) {
+            mainCamera = devices.find((device) =>
+              /back|rear/i.test(device.label)
+            );
+          }
+
+          // If still no match, use the first camera (usually the back one on mobile)
+          if (!mainCamera && devices.length > 1) {
+            // On mobile, the back camera is often the second in the list (index 1)
+            mainCamera = devices[1];
+          } else if (!mainCamera) {
+            // If only one camera or no other match, use the first one
+            mainCamera = devices[0];
+          }
+
+          console.log("Selected camera:", mainCamera);
+          setCameraId(mainCamera.id);
         }
       } catch (err) {
         setCameraPermission(false);
@@ -114,6 +145,9 @@ export default function Dashboard() {
     setScanMode("camera");
 
     try {
+      console.log("Starting camera with ID:", cameraId);
+
+      // Use explicit configuration to ensure we use the right camera
       await scanner.start(
         cameraId,
         {
@@ -132,6 +166,38 @@ export default function Dashboard() {
       setIsScanning(true);
     } catch (err) {
       console.error("Error starting camera:", err);
+
+      // Fallback to environment facing camera if specific ID fails
+      try {
+        console.log("Trying environment facing camera as fallback");
+
+        // First check if there are any other camera IDs available
+        const devices = await Html5Qrcode.getCameras();
+
+        if (devices && devices.length > 1) {
+          // Try another camera that's not the current one
+          const alternativeCameraId = devices.find(
+            (device) => device.id !== cameraId
+          )?.id;
+
+          if (alternativeCameraId) {
+            await scanner.start(
+              alternativeCameraId,
+              { fps: 15, qrbox: { width: 250, height: 250 } },
+              (decodedText) => {
+                setScanResult(decodedText);
+                stopScanning();
+              },
+              (errorMessage) => {
+                console.error("QR scan fallback error:", errorMessage);
+              }
+            );
+            setIsScanning(true);
+          }
+        }
+      } catch (fallbackErr) {
+        console.error("Error with fallback camera method:", fallbackErr);
+      }
     }
   };
 

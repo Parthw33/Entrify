@@ -1,97 +1,339 @@
 "use client";
 
-import { auth } from "@/auth";
-import InstallPWA from "@/components/installPWA";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowRight, Scan, BarChart3, Shield } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Calendar,
+  Scan,
+  Users,
+  Check,
+  ArrowRight,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { getProfileStats } from "@/app/actions/getProfileStats";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const session = useSession().data;
+  const [stats, setStats] = useState({
+    total: 0,
+    approved: 0,
+    pending: 0,
+    approvedFemaleStats: 0,
+    approvedMaleStats: 0,
+    totalMaleStats: 0,
+    totalFemaleStats: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  console.log(session);
+  useEffect(() => {
+    async function fetchStats() {
+      setIsLoading(true);
+      try {
+        const data = await getProfileStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Error fetching profile stats:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
   const features = [
     {
       icon: <Scan className="h-8 w-8" />,
-      title: "QR Code Scanning",
+      title: "QR कोड स्कॅनिंग",
       description:
-        "Scan and process QR codes instantly with real-time detection",
+        "सहभागींची नोंदणी आणि प्रवेश व्यवस्थापन करण्यासाठी QR कोड स्कॅनिंग",
     },
     {
-      icon: <BarChart3 className="h-8 w-8" />,
-      title: "Data Analytics",
+      icon: <Users className="h-8 w-8" />,
+      title: "नोंदणी प्रक्रिया",
       description:
-        "Comprehensive analytics and reporting for your business needs",
+        "सुलभ ऑनलाइन नोंदणी प्रक्रिया आणि उमेदवार प्रोफाइल व्यवस्थापन",
     },
     {
-      icon: <Shield className="h-8 w-8" />,
-      title: "Secure Platform",
-      description: "Enterprise-grade security for your sensitive data",
+      icon: <Check className="h-8 w-8" />,
+      title: "परिचय माहिती",
+      description: "रुचीनुसार परिचय सेवा आणि प्रोफाइल जुळवणी",
+    },
+  ];
+
+  const eventDetails = [
+    {
+      icon: <Calendar className="h-5 w-5 text-primary" />,
+      label: "दिनांक",
+      value: "29 जुलै 2025",
+    },
+    {
+      icon: <Users className="h-5 w-5 text-primary" />,
+      label: "आयोजक",
+      value: "आर्य वैश्य कोमटी समाज, पंढरपूर",
     },
   ];
 
   return (
     <main>
-      {/* Hero Section */}
-      <div className="relative isolate">
-        <div className="gradient-bg absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
-          <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-primary to-secondary opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" />
-        </div>
+      {/* Hero Section with Gradient Overlay */}
+      <section className="relative overflow-hidden">
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-background z-0"></div>
 
-        <div className="mx-auto max-w-7xl px-6 pb-24 pt-5 sm:pb-32 lg:px-8 lg:py-40">
-          {/* Banner Image - Wide and Above Heading */}
-          <div className="w-full mb-12">
-            <Image
-              src="https://res.cloudinary.com/ddrxbg3h9/image/upload/v1741503397/Sneh_melava_brpsgc.png"
-              alt="Banner image"
-              className="w-full h-auto rounded-xl shadow-xl"
-              width={1920}
-              height={1080}
-            />
-          </div>
+        <div className="container mx-auto px-4 py-16 relative z-10">
+          <div className="flex flex-col items-center">
+            {/* Banner Image */}
+            <div className="w-full max-w-4xl mb-8">
+              <Image
+                src="https://res.cloudinary.com/ddrxbg3h9/image/upload/v1741503397/Sneh_melava_brpsgc.png"
+                alt="स्नेहबंध मेळावा"
+                className="w-full h-auto rounded-lg shadow-lg"
+                width={1000}
+                height={400}
+                priority
+              />
+            </div>
 
-          <div className="mx-auto text-center max-w-3xl">
-            <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-              आर्य वैश्य कोमटी समाज पंढरपूर संचलित स्नेहबंध पंढरपूर २०२५
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-muted-foreground mx-auto">
-              स्व. सुरेश (आबा) कौलवार यांच्या स्मरणार्थ आर्य वैश्य कोमटी समाज,
-              पंढरपूर संचलित स्नेहबंध २०२५
-            </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link href="/dashboard">
-                <Button size="lg" className="gap-2">
-                  Get Started <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button variant="outline" size="lg">
-                  Register New
-                </Button>
-              </Link>
+            {/* Main Title and Description */}
+            <div className="text-center max-w-3xl">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
+                आर्य वैश्य कोमटी समाज पंढरपूर संचलित
+                <span className="text-primary block mt-2">
+                  स्नेहबंध पंढरपूर २०२५
+                </span>
+              </h1>
+              <p className="mt-4 text-lg text-muted-foreground">
+                स्व. सुरेश (आबा) कौलवार यांच्या स्मरणार्थ आर्य वैश्य कोमटी समाज,
+                पंढरपूर संचलित स्नेहबंध २०२५
+              </p>
+
+              {/* Event Details */}
+              <div className="flex flex-wrap justify-center gap-6 mt-6">
+                {eventDetails.map((detail, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm"
+                  >
+                    {detail.icon}
+                    <span className="font-medium">{detail.label}:</span>
+                    <span>{detail.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                <Link href="/dashboard">
+                  <Button size="lg" className="gap-2 h-12 px-6">
+                    Get Started <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="gap-2 h-12 px-6 border-2"
+                  >
+                    New Registration
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Stats Section */}
+              <div className="mt-12">
+                <h3 className="text-lg font-semibold mb-4">
+                  Registration Statistics
+                </h3>
+
+                {isLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                    {[...Array(3)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="bg-white rounded-lg shadow-sm border p-4"
+                      >
+                        <Skeleton className="h-6 w-20 mb-2" />
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                    {/* Total Registrations */}
+                    <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                      <div className="bg-blue-50 px-4 py-2 border-b flex justify-between items-center">
+                        <h4 className="font-medium text-blue-800">
+                          Total Registrations
+                        </h4>
+                        <Users className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div className="p-4">
+                        <p className="text-3xl font-bold text-blue-800">
+                          {stats.total}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-50 text-blue-600"
+                          >
+                            Male: {stats.totalMaleStats}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="bg-pink-50 text-pink-600"
+                          >
+                            Female: {stats.totalFemaleStats}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Approved */}
+                    <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                      <div className="bg-green-50 px-4 py-2 border-b flex justify-between items-center">
+                        <h4 className="font-medium text-green-800">
+                          Approved Profiles
+                        </h4>
+                        <UserCheck className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div className="p-4">
+                        <p className="text-3xl font-bold text-green-800">
+                          {stats.approved}
+                          <span className="text-sm font-normal text-slate-500 ml-2">
+                            (
+                            {Math.round(
+                              (stats.approved / (stats.total || 1)) * 100
+                            )}
+                            %)
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-50 text-blue-600"
+                          >
+                            Male: {stats.approvedMaleStats}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="bg-pink-50 text-pink-600"
+                          >
+                            Female: {stats.approvedFemaleStats}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pending */}
+                    <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                      <div className="bg-amber-50 px-4 py-2 border-b flex justify-between items-center">
+                        <h4 className="font-medium text-amber-800">
+                          Pending Approval
+                        </h4>
+                        <UserX className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div className="p-4">
+                        <p className="text-3xl font-bold text-amber-800">
+                          {stats.pending}
+                          <span className="text-sm font-normal text-slate-500 ml-2">
+                            (
+                            {Math.round(
+                              (stats.pending / (stats.total || 1)) * 100
+                            )}
+                            %)
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-50 text-blue-600"
+                          >
+                            Male:{" "}
+                            {stats.totalMaleStats - stats.approvedMaleStats}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="bg-pink-50 text-pink-600"
+                          >
+                            Female:{" "}
+                            {stats.totalFemaleStats - stats.approvedFemaleStats}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Features Section */}
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 pb-24">
-        <div className="mx-auto grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-2 lg:max-w-none lg:grid-cols-3">
-          {features.map((feature, index) => (
-            <Card key={index} className="p-6 transition-all hover:shadow-lg">
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground">{feature.description}</p>
-            </Card>
-          ))}
+      <section className="bg-slate-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold">
+              कार्यक्रम वैशिष्ट्ये
+            </h2>
+            <div className="mt-2 h-1 w-16 bg-primary mx-auto rounded-full"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card
+                key={index}
+                className="border bg-white shadow-sm hover:shadow-md transition-shadow"
+              >
+                <CardHeader className="pb-2">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
+                    {feature.icon}
+                  </div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base">
+                    {feature.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Bottom CTA */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold">
+            आमच्या स्नेहबंध कार्यक्रमात सहभागी व्हा
+          </h2>
+          <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
+            स्नेहबंध मेळाव्यात सहभागी होण्यासाठी आज आपली नोंदणी करा आणि आपल्या
+            भविष्यातील जोडीदारास भेटण्याची संधी मिळवा.
+          </p>
+          <div className="mt-8">
+            <Link href="/register">
+              <Button size="lg" className="gap-2 h-12 px-8">
+                आता नोंदणी करा
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

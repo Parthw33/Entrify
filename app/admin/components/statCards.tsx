@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Users, UserCheck, UserX } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, UserCheck, UserX, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { getProfileStats } from "@/app/actions/getProfileStats";
+import { toast } from "sonner";
 
 interface StatsProps {
   onApprovedClick: () => void;
@@ -25,10 +27,10 @@ export default function StatCards({ onApprovedClick }: StatsProps) {
       setIsLoading(true);
       try {
         const data = await getProfileStats();
-        console.log("Fetched stats:", data);
         setStats(data);
       } catch (error) {
         console.error("Error fetching profile stats:", error);
+        toast.error("Failed to load statistics");
       } finally {
         setIsLoading(false);
       }
@@ -40,14 +42,20 @@ export default function StatCards({ onApprovedClick }: StatsProps) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[...Array(3)].map((_, i) => (
-          <Card key={i} className="p-4">
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-10 w-10 rounded-md" />
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-6 w-16" />
+          <Card key={i} className="shadow-sm border overflow-hidden">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <Skeleton className="h-6 w-36" />
+                <Skeleton className="h-8 w-8 rounded-full" />
               </div>
-            </div>
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-28 mt-2" />
+              <div className="flex gap-2 mt-2">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            </CardContent>
           </Card>
         ))}
       </div>
@@ -56,40 +64,92 @@ export default function StatCards({ onApprovedClick }: StatsProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <Card className="p-4 flex items-center gap-4">
-        <Users className="h-10 w-10 text-blue-500" />
-        <div>
-          <h3 className="text-lg font-semibold">Total Profiles</h3>
-          <p className="text-xl font-bold">
-            {stats.total} (M: {stats.totalMaleStats}, F:{" "}
-            {stats.totalFemaleStats})
-          </p>
-        </div>
+      {/* Total Profiles Card */}
+      <Card className="shadow-sm border overflow-hidden">
+        <CardHeader className="pb-2 bg-slate-50 border-b">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg font-medium">
+              Total Profiles
+            </CardTitle>
+            <Users className="h-6 w-6 text-blue-600" />
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
+            <div className="flex gap-2 mt-2 text-sm">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                Male: {stats.totalMaleStats}
+              </Badge>
+              <Badge variant="outline" className="bg-pink-50 text-pink-700">
+                Female: {stats.totalFemaleStats}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
+      {/* Approved Profiles Card */}
       <Card
-        className="p-4 flex items-center gap-4 cursor-pointer hover:bg-gray-50"
+        className="shadow-sm border overflow-hidden transition-colors hover:border-green-200 cursor-pointer"
         onClick={onApprovedClick}
       >
-        <UserCheck className="h-10 w-10 text-green-500" />
-        <div>
-          <h3 className="text-lg font-semibold">Approved</h3>
-          <p className="text-xl font-bold">
-            {stats.approved} (M: {stats.approvedMaleStats}, F:{" "}
-            {stats.approvedFemaleStats})
-          </p>
-        </div>
+        <CardHeader className="pb-2 bg-slate-50 border-b">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg font-medium">
+              Approved Profiles
+            </CardTitle>
+            <UserCheck className="h-6 w-6 text-green-600" />
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold text-green-700">
+              {stats.approved}
+              <span className="text-sm font-normal text-slate-500 ml-2">
+                ({Math.round((stats.approved / stats.total) * 100) || 0}%)
+              </span>
+            </p>
+            <div className="flex gap-2 mt-2 text-sm">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                Male: {stats.approvedMaleStats}
+              </Badge>
+              <Badge variant="outline" className="bg-pink-50 text-pink-700">
+                Female: {stats.approvedFemaleStats}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
-      <Card className="p-4 flex items-center gap-4">
-        <UserX className="h-10 w-10 text-red-500" />
-        <div>
-          <h3 className="text-lg font-semibold">Pending Approval</h3>
-          <p className="text-xl font-bold">
-            {stats.pending} (M: {stats.totalMaleStats - stats.approvedMaleStats}
-            , F: {stats.totalFemaleStats - stats.approvedFemaleStats})
-          </p>
-        </div>
+      {/* Pending Profiles Card */}
+      <Card className="shadow-sm border overflow-hidden">
+        <CardHeader className="pb-2 bg-slate-50 border-b">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg font-medium">
+              Pending Approval
+            </CardTitle>
+            <UserX className="h-6 w-6 text-amber-600" />
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold text-amber-700">
+              {stats.pending}
+              <span className="text-sm font-normal text-slate-500 ml-2">
+                ({Math.round((stats.pending / stats.total) * 100) || 0}%)
+              </span>
+            </p>
+            <div className="flex gap-2 mt-2 text-sm">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                Male: {stats.totalMaleStats - stats.approvedMaleStats}
+              </Badge>
+              <Badge variant="outline" className="bg-pink-50 text-pink-700">
+                Female: {stats.totalFemaleStats - stats.approvedFemaleStats}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );
