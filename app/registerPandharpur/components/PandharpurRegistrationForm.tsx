@@ -1368,7 +1368,9 @@ const PandharpurRegistrationForm: React.FC = () => {
               </p>
 
               <Button
-                onClick={() => router.push("/registerPandharpur")}
+                onClick={() => {
+                  window.location.reload(); // Force a full page reload
+                }}
                 variant="outline"
                 className="mt-4"
               >
