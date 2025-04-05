@@ -38,8 +38,11 @@ import {
   Book,
   Home,
   Users,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { sendEmail } from "@/app/actions/sendEmail";
+import { Slider } from "@/components/ui/slider";
 
 const registrationSchema = z.object({
   anubandhId: z.string().min(1, "Anubandh ID is required"),
@@ -137,6 +140,29 @@ const RegistrationForm: React.FC = () => {
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAttendeeCountChange = (value: number[]) => {
+    const numValue = value[0];
+    setFormData((prev) => ({ ...prev, attendeeCount: numValue }));
+  };
+
+  const incrementAttendeeCount = () => {
+    if (formData.attendeeCount < 10) {
+      setFormData((prev) => ({
+        ...prev,
+        attendeeCount: prev.attendeeCount + 1,
+      }));
+    }
+  };
+
+  const decrementAttendeeCount = () => {
+    if (formData.attendeeCount > 1) {
+      setFormData((prev) => ({
+        ...prev,
+        attendeeCount: prev.attendeeCount - 1,
+      }));
     }
   };
 
@@ -510,22 +536,50 @@ const RegistrationForm: React.FC = () => {
                     <Users className="inline-block w-4 h-4 mr-1" />
                     मेहमानों की संख्या (Guest Count.)
                   </Label>
-                  <Input
-                    id="attendeeCount"
-                    name="attendeeCount"
-                    type="number"
-                    min="1"
-                    value={formData.attendeeCount}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value) && value > 0) {
-                        setFormData((prev) => ({
-                          ...prev,
-                          attendeeCount: value,
-                        }));
-                      }
-                    }}
-                  />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={decrementAttendeeCount}
+                        disabled={formData.attendeeCount <= 1}
+                        className="h-8 w-8"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <div className="font-medium text-center w-16">
+                        {formData.attendeeCount}{" "}
+                        {formData.attendeeCount === 1 ? "Person" : "Persons"}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={incrementAttendeeCount}
+                        disabled={formData.attendeeCount >= 10}
+                        className="h-8 w-8"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="px-2">
+                      <Slider
+                        value={[formData.attendeeCount]}
+                        min={1}
+                        max={10}
+                        step={1}
+                        onValueChange={handleAttendeeCountChange}
+                        className="mt-2"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                        <span>1</span>
+                        <span>5</span>
+                        <span>10</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Address */}

@@ -55,14 +55,14 @@ export function Nav() {
 
   // Only include non-home routes if user is not in default role
   const navigation = [
-    { name: "Home", href: "/", icon: <Home size={16} /> },
+    { name: "Home", href: "/", icon: <Home size={18} /> },
     ...(isDefaultRole || !session?.data?.user
       ? []
       : [
           {
             name: "Dashboard",
             href: "/dashboard",
-            icon: <LayoutDashboard size={16} />,
+            icon: <LayoutDashboard size={18} />,
           },
           {
             name:
@@ -72,9 +72,9 @@ export function Nav() {
             href: "/admin",
             icon:
               session?.data?.user?.role === "admin" ? (
-                <ShieldAlert size={16} />
+                <ShieldAlert size={18} />
               ) : (
-                <Users size={16} />
+                <Users size={18} />
               ),
           },
           // Add the Manage Users link only for admins
@@ -83,19 +83,19 @@ export function Nav() {
                 {
                   name: "Manage Users",
                   href: "/admin/manage-users",
-                  icon: <UserCog size={16} />,
+                  icon: <UserCog size={18} />,
                 },
               ]
             : []),
           {
             name: "New Registrations",
             href: "/newlyRegistered",
-            icon: <Clock size={16} />,
+            icon: <Clock size={18} />,
           },
           {
             name: "Introduction View",
             href: "/introductionView",
-            icon: <Heart size={16} />,
+            icon: <Heart size={18} />,
           },
         ]),
   ];
@@ -126,12 +126,12 @@ export function Nav() {
           <div className="flex items-center">
             <Link
               href="/"
-              className="flex items-center space-x-2 text-lg font-semibold text-foreground transition-colors"
+              className="flex items-center space-x-2 text-base sm:text-lg font-semibold text-foreground transition-colors"
             >
               <span className="hidden sm:inline-block">
                 स्नेहबंध पंढरपूर २०२५
               </span>
-              <span className="sm:hidden">स्नेहबंध पंढरपूर २०२५</span>
+              <span className="sm:hidden">स्नेहबंध</span>
             </Link>
           </div>
 
@@ -273,10 +273,12 @@ export function Nav() {
       <div
         className={cn(
           "md:hidden overflow-hidden transition-all duration-300 ease-in-out border-t",
-          menuOpen ? "max-h-[320px] border-t" : "max-h-0 border-t-transparent"
+          menuOpen
+            ? "max-h-[400px] border-t shadow-lg"
+            : "max-h-0 border-t-transparent"
         )}
       >
-        <div className="px-4 py-3 space-y-1 bg-background/95">
+        <div className="px-4 py-2 space-y-1 bg-background/95">
           {navigation.map((link) => (
             <Link
               key={link.name}
@@ -288,17 +290,17 @@ export function Nav() {
                   : "text-foreground hover:bg-muted"
               )}
             >
-              {link.icon}
-              {link.name}
+              <span className="text-current">{link.icon}</span>
+              <span>{link.name}</span>
             </Link>
           ))}
           {/* Add sign out for mobile menu when logged in */}
           {session.status === "authenticated" && (
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors text-red-600 hover:bg-red-50"
+              className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors text-red-600 hover:bg-red-50 mt-2"
             >
-              <LogOut size={16} />
+              <LogOut size={18} />
               Sign Out
             </button>
           )}

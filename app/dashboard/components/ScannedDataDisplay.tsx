@@ -12,7 +12,15 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, CheckCircle, ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
+import {
+  User,
+  CheckCircle,
+  ArrowLeft,
+  RefreshCw,
+  Loader2,
+  Minus,
+  Plus,
+} from "lucide-react";
 import { getProfile, type Profile } from "@/app/actions/getProfile";
 import { getApprovalStatus } from "@/app/actions/getApprovalStatus";
 import { updateApprovalStatus } from "@/app/actions/updateApprovalStatus";
@@ -21,6 +29,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Slider } from "@/components/ui/slider";
 
 interface ScannedDataProps {
   scanResult: string;
@@ -128,22 +138,44 @@ export default function ScannedDataDisplay({
     }
   };
 
-  const handleGuestCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove non-numeric characters
-    const value = e.target.value.replace(/\D/g, "");
+  const handleGuestCountChange = (value: number[]) => {
+    const numValue = value[0];
 
-    // Parse to number
-    const numValue = value === "" ? 1 : parseInt(value, 10);
+    // Update the guest count
+    setGuestCount(numValue);
 
-    // Validate range (1-10)
-    if (numValue >= 1 && numValue <= 10) {
-      setGuestCount(numValue);
+    // Update profileData with the new guest count
+    if (profileData) {
+      setProfileData({
+        ...profileData,
+        attendeeCount: numValue,
+      });
+    }
+  };
 
-      // Update profileData with the new guest count
+  const incrementGuestCount = () => {
+    if (guestCount < 10) {
+      const newCount = guestCount + 1;
+      setGuestCount(newCount);
+
       if (profileData) {
         setProfileData({
           ...profileData,
-          attendeeCount: numValue,
+          attendeeCount: newCount,
+        });
+      }
+    }
+  };
+
+  const decrementGuestCount = () => {
+    if (guestCount > 1) {
+      const newCount = guestCount - 1;
+      setGuestCount(newCount);
+
+      if (profileData) {
+        setProfileData({
+          ...profileData,
+          attendeeCount: newCount,
         });
       }
     }
@@ -236,6 +268,9 @@ export default function ScannedDataDisplay({
     }
   };
 
+  // Check if profile is female based on gender field
+  const isFemaleProfile = profileData?.gender?.toLowerCase() === "female";
+
   if (!profileData) {
     return (
       <Card className="mt-6 border-slate-200">
@@ -250,122 +285,265 @@ export default function ScannedDataDisplay({
 
   return (
     <div className="mt-6 space-y-4">
-      <Card className="border-slate-200">
-        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-          <div>
-            <CardTitle className="text-xl">
-              {profileData.name}{" "}
-              {profileData.approvalStatus ? (
-                <span className="text-green-600 text-sm">
-                  (Already Approved)
-                </span>
-              ) : (
-                <span className="text-red-600 text-sm">(Not Approved)</span>
-              )}
-            </CardTitle>
-            <CardDescription>
-              {profileData.mobileNumber} - {profileData.anubandhId}
-            </CardDescription>
-          </div>
-          <div className="flex space-x-2">
-            {!isReadOnly && (
-              <Button
-                onClick={onReset}
-                variant="outline"
-                className="h-8 rounded-md"
-              >
-                <RefreshCw className="mr-2 h-3.5 w-3.5" />
-                <span>Reset</span>
-              </Button>
-            )}
+      <Card className="border-slate-200 shadow-md">
+        <CardHeader className="bg-slate-50 border-b p-4 pb-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-xl">{profileData.name} </CardTitle>
+              <CardDescription>
+                {profileData.mobileNumber} - {profileData.anubandhId}
+              </CardDescription>
+            </div>
+            <Badge
+              variant={profileData.approvalStatus ? "secondary" : "outline"}
+              className={`text-sm ${
+                profileData.approvalStatus
+                  ? "bg-green-50 text-green-700 hover:bg-green-50"
+                  : "bg-amber-50 text-amber-700 hover:bg-amber-50"
+              }`}
+            >
+              {profileData.approvalStatus ? "Approved" : "Pending Approval"}
+            </Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <h4 className="font-medium leading-none">
-                Guest Count (Including Self)
-              </h4>
-              <div className="flex items-center gap-4">
-                <Input
-                  type="number"
-                  value={guestCount}
-                  onChange={handleGuestCountChange}
-                  className="max-w-[80px]"
-                  disabled={isReadOnly}
-                  min={1}
-                  max={10}
-                />
-                <Label>Persons</Label>
-              </div>
+
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col space-y-5">
+            {/* Photo section - centered on mobile, left-aligned on desktop */}
+            <div className="flex justify-center md:justify-start">
+              {profileData.photo ? (
+                <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-slate-200">
+                  <AvatarImage
+                    src={profileData.photo}
+                    alt={`Photo of ${profileData.name}`}
+                  />
+                  <AvatarFallback>
+                    {profileData.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-slate-200">
+                  <AvatarFallback>
+                    <User className="h-8 w-8 md:h-10 md:w-10" />
+                  </AvatarFallback>
+                </Avatar>
+              )}
             </div>
 
-            {/* Introduction Status */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="introductionStatus"
-                checked={introductionStatus}
-                onCheckedChange={(checked) => {
-                  setIntroductionStatus(!!checked);
-                  setIntroductionChecked(!!checked);
-                }}
-                disabled={isReadOnly}
-              />
-              <label
-                htmlFor="introductionStatus"
-                className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Introduction Status
-              </label>
+            {/* Profile information */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-base">
+              <div>
+                <p className="text-sm text-muted-foreground">Name</p>
+                <p className="font-medium">{profileData.name}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Email</p>
+                <p className="font-medium break-words">{profileData.email}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Mobile</p>
+                <p className="font-medium">{profileData.mobileNumber}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground">Gender</p>
+                <p className="font-medium">
+                  {profileData.gender || "Not specified"}
+                </p>
+              </div>
+
+              {profileData.dateOfBirth && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Date of Birth</p>
+                  <p className="font-medium">
+                    {new Date(profileData.dateOfBirth).toLocaleDateString(
+                      "en-GB"
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {profileData.education && (
+                <div className="sm:col-span-2">
+                  <p className="text-sm text-muted-foreground">Education</p>
+                  <p className="font-medium">{profileData.education}</p>
+                </div>
+              )}
+
+              {/* Guest Count section - Only editable for female profiles */}
+              <div className="sm:col-span-2 mt-2">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Guest Count (Including Self)
+                </p>
+
+                {isFemaleProfile &&
+                !isReadOnly &&
+                !profileData.approvalStatus ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={decrementGuestCount}
+                        disabled={guestCount <= 1}
+                        className="h-8 w-8"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <div className="font-medium text-center w-16">
+                        {guestCount} {guestCount === 1 ? "Person" : "Persons"}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={incrementGuestCount}
+                        disabled={guestCount >= 10}
+                        className="h-8 w-8"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="px-2">
+                      <Slider
+                        value={[guestCount]}
+                        min={1}
+                        max={10}
+                        step={1}
+                        onValueChange={handleGuestCountChange}
+                        className="mt-2"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                        <span>1</span>
+                        <span>5</span>
+                        <span>10</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="font-medium">
+                    {guestCount} {guestCount === 1 ? "Person" : "Persons"}
+                    {!isFemaleProfile &&
+                      !isReadOnly &&
+                      !profileData.approvalStatus && (
+                        <span className="text-xs text-amber-600 ml-2">
+                          (Only female profiles can edit guest count)
+                        </span>
+                      )}
+                  </p>
+                )}
+              </div>
+
+              {/* Introduction Status */}
+              <div className="sm:col-span-2 mt-2">
+                {/* If already approved and has introduction status, show it as text */}
+                {profileData.approvalStatus &&
+                  profileData.introductionStatus && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Introduction Status
+                      </p>
+                      <p className="font-medium text-green-600 flex items-center gap-1">
+                        <CheckCircle className="h-4 w-4" />
+                        Interested for Introduction
+                      </p>
+                    </div>
+                  )}
+
+                {/* For profiles that are either not approved, or approved but without introduction status */}
+                {canApprove &&
+                  (!profileData.approvalStatus ||
+                    (profileData.approvalStatus &&
+                      !profileData.introductionStatus)) && (
+                    <div className="border-t pt-4 mt-1">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="introductionStatus"
+                          checked={introductionStatus}
+                          onCheckedChange={(checked) => {
+                            setIntroductionStatus(!!checked);
+                            setIntroductionChecked(!!checked);
+                          }}
+                          disabled={isReadOnly}
+                          className="h-5 w-5"
+                        />
+                        <Label
+                          htmlFor="introductionStatus"
+                          className="font-medium cursor-pointer text-sm"
+                        >
+                          Interested for Introduction
+                        </Label>
+                      </div>
+                    </div>
+                  )}
+              </div>
             </div>
 
             {/* Display error message if any */}
-            {searchError && <p className="text-red-500">{searchError}</p>}
-
-            {/* Approval buttons - hidden for readOnly */}
-            {canApprove && (
-              <div className="flex flex-col space-y-2 pt-2">
-                <Button
-                  onClick={handleApproveProfile}
-                  disabled={profileData.approvalStatus || isSubmitting}
-                  className={`w-full ${
-                    profileData.approvalStatus
-                      ? "bg-green-100 text-green-800 hover:bg-green-100 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white"
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : profileData.approvalStatus ? (
-                    "Already Approved"
-                  ) : (
-                    "Approve Entry"
-                  )}
-                </Button>
-
-                {profileData.approvalStatus && (
-                  <Button
-                    onClick={handleUpdateIntroduction}
-                    disabled={isSubmitting}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      "Update Introduction Status"
-                    )}
-                  </Button>
-                )}
-              </div>
+            {searchError && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertDescription>{searchError}</AlertDescription>
+              </Alert>
             )}
           </div>
         </CardContent>
+
+        <CardFooter className="flex justify-between space-x-3 p-4 sm:p-6 border-t">
+          {!isReadOnly && (
+            <Button onClick={onReset} variant="outline" className="h-10 gap-2">
+              <RefreshCw className="h-4 w-4" />
+              <span>Reset</span>
+            </Button>
+          )}
+
+          <div className="flex gap-2">
+            {/* Show approve button for profiles that are not approved */}
+            {canApprove && !profileData.approvalStatus && (
+              <Button
+                onClick={handleApproveProfile}
+                disabled={isSubmitting}
+                className="gap-2 bg-green-600 hover:bg-green-700 text-sm h-10 px-5"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    Approve Entry
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Show update introduction status button for approved profiles without introduction status */}
+            {canApprove &&
+              profileData.approvalStatus &&
+              !profileData.introductionStatus && (
+                <Button
+                  onClick={handleUpdateIntroduction}
+                  disabled={isSubmitting}
+                  className="gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-10 px-5"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      Set Introduction
+                    </>
+                  )}
+                </Button>
+              )}
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );
