@@ -1368,7 +1368,7 @@ const PandharpurRegistrationForm: React.FC = () => {
               </p>
 
               <Button
-                onClick={() => router.refresh}
+                onClick={() => router.push("/registerPandharpur")}
                 variant="outline"
                 className="mt-4"
               >
