@@ -38,6 +38,9 @@ export function Nav() {
   const userRole = session?.data?.user?.role || "default";
   const isDefaultRole = userRole === "default";
 
+  // Special case for registerPandharpur route
+  const isPandharpurRegisterPage = pathname === "/registerPandharpur";
+
   // Handle scroll effect for navbar
   useEffect(() => {
     const handleScroll = () => {
@@ -55,7 +58,9 @@ export function Nav() {
 
   // Only include non-home routes if user is not in default role
   const navigation = [
-    { name: "Home", href: "/", icon: <Home size={18} /> },
+    ...(isPandharpurRegisterPage
+      ? []
+      : [{ name: "Home", href: "/", icon: <Home size={18} /> }]),
     ...(isDefaultRole || !session?.data?.user
       ? []
       : [
@@ -160,13 +165,15 @@ export function Nav() {
 
             {/* Login Button or User Avatar with Dropdown Desktop */}
             {!session.data ? (
-              <Button
-                onClick={() => signIn("google", { callbackUrl: "/" })}
-                size="sm"
-                className="ml-4"
-              >
-                Sign In
-              </Button>
+              !isPandharpurRegisterPage && (
+                <Button
+                  onClick={() => signIn("google", { callbackUrl: "/" })}
+                  size="sm"
+                  className="ml-4"
+                >
+                  Sign In
+                </Button>
+              )
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -210,14 +217,16 @@ export function Nav() {
           {/* Mobile Menu Button */}
           <div className="flex md:hidden">
             {!session.data ? (
-              <Button
-                onClick={() => signIn("google", { callbackUrl: "/" })}
-                size="sm"
-                variant="outline"
-                className="mr-2"
-              >
-                Sign In
-              </Button>
+              !isPandharpurRegisterPage && (
+                <Button
+                  onClick={() => signIn("google", { callbackUrl: "/" })}
+                  size="sm"
+                  variant="outline"
+                  className="mr-2"
+                >
+                  Sign In
+                </Button>
+              )
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

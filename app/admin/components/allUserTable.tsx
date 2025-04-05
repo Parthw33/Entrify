@@ -470,20 +470,26 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                     or when profile is not approved (in which case it will be used when approving) */}
                 {canApprove && (
                   <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`introductionStatus-${selectedUser.id}`}
-                      checked={introductionChecked}
-                      onCheckedChange={(checked) =>
-                        setIntroductionChecked(checked === true)
-                      }
-                      disabled={isSubmitting}
-                    />
-                    <Label
-                      htmlFor={`introductionStatus-${selectedUser.id}`}
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      Interested for Introduction
-                    </Label>
+                    {!selectedUser.introductionStatus ? (
+                      <>
+                        <Checkbox
+                          id={`introductionStatus-${selectedUser.id}`}
+                          checked={introductionChecked}
+                          onCheckedChange={(checked) =>
+                            setIntroductionChecked(checked === true)
+                          }
+                          disabled={isSubmitting}
+                        />
+                        <Label
+                          htmlFor={`introductionStatus-${selectedUser.id}`}
+                          className="text-sm font-medium cursor-pointer"
+                        >
+                          Interested for Introduction
+                        </Label>
+                      </>
+                    ) : (
+                      <></>
+                    )}
                   </div>
                 )}
 
@@ -507,7 +513,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                   )}
 
                 {/* Approve button - shown only when profile is not approved */}
-                {!selectedUser.approvalStatus && canApprove && (
+                {/* {!selectedUser.approvalStatus && canApprove && (
                   <Button
                     onClick={handleApproveProfile}
                     disabled={isSubmitting}
@@ -517,10 +523,10 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                     <CheckCircle className="h-4 w-4" />
                     {isSubmitting ? "Processing..." : "Approve Entry"}
                   </Button>
-                )}
+                )} */}
 
                 {/* Update Introduction Status button - shown ONLY when profile is already approved but introductionStatus is false */}
-                {selectedUser.approvalStatus &&
+                {/* {selectedUser.approvalStatus &&
                   !selectedUser.introductionStatus &&
                   canApprove && (
                     <Button
@@ -532,7 +538,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                       <CheckCircle className="h-4 w-4" />
                       {isSubmitting ? "Saving..." : "Set Introduction Status"}
                     </Button>
-                  )}
+                  )} */}
               </div>
             </DialogDescription>
             <DialogFooter className="flex justify-end pt-4 space-x-2">

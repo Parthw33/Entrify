@@ -152,3 +152,50 @@ model ProfileCsv {
   approvalStatus        Boolean  @default(false)
   introductionStatus    Boolean  @default(false)
 }
+
+model PandharpurProfile {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  timestamp             DateTime @default(now())
+  email                 String
+  gender                String
+  attendeeCount         Int
+  anubandhId            String   @unique
+  name                  String
+  mobileNumber          String
+  dateOfBirth           String
+  birthTime             String
+  birthPlace            String
+  education             String
+  aboutSelf             String?
+  maritalStatus         String?
+  firstGotra            String
+  secondGotra           String
+  currentAddress        String
+  permanentAddress      String
+  complexion            String?
+  height                String
+  bloodGroup            String?
+  annualIncome          String
+  fatherName            String?
+  fatherOccupation      String?
+  fatherMobile          String?
+  motherName            String?
+  motherMobile          String?
+  motherOccupation      String?
+  motherTongue          String?
+  brothersDetails       String?
+  sistersDetails        String?
+  partnerExpectations   String?
+  expectedQualification String?
+  expectedIncome        String?
+  ageRange              String?
+  expectedHeight        String?
+  preferredCity         String?
+  photo                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  approvalStatus        Boolean  @default(false)
+  introductionStatus    Boolean  @default(false)
+
+  @@map("pandharpur_profiles")
+}

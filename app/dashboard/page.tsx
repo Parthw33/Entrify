@@ -613,12 +613,18 @@ export default function Dashboard() {
 
     try {
       const profile = await getProfile(anubandhId.trim());
+
+      if (!profile) {
+        toast.error("Anubandh ID not present");
+        setIsSearching(false);
+        return;
+      }
+
       setProfileData(profile);
+      setIntroductionChecked(profile.introductionStatus || false);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to search profile";
-      setSearchError(errorMessage);
       console.error("Search error:", error);
+      toast.error("Anubandh ID not present");
     } finally {
       setIsSearching(false);
     }

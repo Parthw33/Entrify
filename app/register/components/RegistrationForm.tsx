@@ -202,6 +202,20 @@ const RegistrationForm: React.FC = () => {
       });
       setErrors(newErrors);
       setLoading(false);
+
+      // Scroll to the first field with an error
+      const firstErrorField = validationResult.error.errors[0]?.path[0];
+      if (firstErrorField) {
+        const errorElement = document.getElementById(firstErrorField as string);
+        if (errorElement) {
+          // Scroll the element into view with a small offset from the top
+          errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          // Focus on the element
+          errorElement.focus();
+        }
+      }
+
       return;
     }
 
@@ -312,6 +326,36 @@ const RegistrationForm: React.FC = () => {
         {!submitted ? (
           <form onSubmit={handleSubmit}>
             <CardContent className="pt-6 space-y-6">
+              {Object.keys(errors).length > 0 && (
+                <div className="p-3 mb-4 border border-red-200 rounded-md bg-red-50">
+                  <p className="font-medium text-red-800">
+                    Please fix the following errors:
+                  </p>
+                  <ul className="mt-2 text-sm list-disc pl-5 text-red-700">
+                    {Object.entries(errors).map(([field, message]) => (
+                      <li key={field}>
+                        <button
+                          type="button"
+                          className="text-left hover:underline focus:outline-none"
+                          onClick={() => {
+                            const element = document.getElementById(field);
+                            if (element) {
+                              element.scrollIntoView({
+                                behavior: "smooth",
+                                block: "center",
+                              });
+                              element.focus();
+                            }
+                          }}
+                        >
+                          {message}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Anubandh ID */}
                 <div className="space-y-2">
