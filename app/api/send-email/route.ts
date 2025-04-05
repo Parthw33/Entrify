@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Your Registration Confirmation & QR Code",
+      subject: "Your Registration Confirmation & QR Code for स्नेहबंध पंढरपूर २०२५",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
           

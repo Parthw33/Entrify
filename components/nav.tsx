@@ -16,6 +16,7 @@ import {
   Users,
   UserCog,
   LogOut,
+  View,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -100,7 +101,7 @@ export function Nav() {
           {
             name: "Introduction View",
             href: "/introductionView",
-            icon: <Heart size={18} />,
+            icon: <View size={18} />,
           },
         ]),
   ];
@@ -128,17 +129,26 @@ export function Nav() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center">
-            <Link
-              href="/"
-              className="flex items-center space-x-2 text-base sm:text-lg font-semibold text-foreground transition-colors"
-            >
+          {!isPandharpurRegisterPage ? (
+            <div className="flex items-center">
+              <Link
+                href="/"
+                className="flex items-center space-x-2 text-base sm:text-lg font-semibold text-foreground transition-colors"
+              >
+                <span className="hidden sm:inline-block">
+                  स्नेहबंध पंढरपूर २०२५
+                </span>
+                <span className="sm:hidden">स्नेहबंध पंढरपूर २०२५</span>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2 text-base sm:text-lg font-semibold text-foreground transition-colors">
               <span className="hidden sm:inline-block">
                 स्नेहबंध पंढरपूर २०२५
               </span>
-              <span className="sm:hidden">स्नेहबंध</span>
-            </Link>
-          </div>
+              <span className="sm:hidden">स्नेहबंध पंढरपूर २०२५</span>
+            </div>
+          )}
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex md:space-x-6 items-center">

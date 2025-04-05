@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       from: `"${process.env.EMAIL_FROM_NAME }" <${process.env.PANDHARPUR_EMAIL_USER}>`,
       sender: process.env.PANDHARPUR_EMAIL_USER,
       to: email,
-      subject: "Your Registration Confirmation & QR Code",
+      subject: "Your Registration Confirmation & QR Code for स्नेहबंध पंढरपूर २०२५",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
           
@@ -78,6 +78,7 @@ export async function POST(req: Request) {
           <div style="text-align: center; font-size: 12px; color: #777; padding: 10px; background: #f8f9fa; border-top: 1px solid #ddd;">
             <p>Designed & Developed By <strong>DataElegance Solutions LLP</strong></p>
             <p>Rajendra Wattamwar & Sulbha Wattamwar</p>
+            <p>Contact Details: 8087067067/8788363612</p>
           </div>
         </div>
       `,
