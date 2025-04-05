@@ -126,35 +126,34 @@ export default function Dashboard() {
           // Try to find a camera with ID "0"
           selectedCamera = devices.find((device) => device.id === "0");
 
+          // if (!selectedCamera) {
+          // // Try to find a camera with back camera keywords in order of priority
+          // const backCameraKeywords = [
+          //   "back camera",
+          //   "facing back",
+          //   "camera2",
+          //   "environment",
+          //   "rear",
+          // ];
+
+          // for (const keyword of backCameraKeywords) {
+          //   selectedCamera = devices.find((device) =>
+          //     device.label.toLowerCase().includes(keyword)
+          //   );
+          //   if (selectedCamera) {
+          //     console.log(
+          //       `Selected camera with keyword "${keyword}":`,
+          //       selectedCamera
+          //     );
+          //     break;
+          //   }
+          // }
+
+          // If still no match, try any camera with "back" in the name
           if (!selectedCamera) {
-            // Try to find a camera with back camera keywords in order of priority
-            const backCameraKeywords = [
-              "back camera",
-              "facing back",
-              "camera2",
-              "environment",
-              "rear",
-            ];
-
-            for (const keyword of backCameraKeywords) {
-              selectedCamera = devices.find((device) =>
-                device.label.toLowerCase().includes(keyword)
-              );
-              if (selectedCamera) {
-                console.log(
-                  `Selected camera with keyword "${keyword}":`,
-                  selectedCamera
-                );
-                break;
-              }
-            }
-
-            // If still no match, try any camera with "back" in the name
-            if (!selectedCamera) {
-              selectedCamera = devices.find((device) =>
-                device.label.toLowerCase().includes("back")
-              );
-            }
+            selectedCamera = devices.find((device) =>
+              device.label.toLowerCase().includes("back")
+            );
           }
 
           // Default to first camera if no back camera found
