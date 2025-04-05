@@ -9,6 +9,7 @@ declare module "next-auth" {
       id: string;
       name?: string | null;
       email?: string | null;
+      role?: string | null;
       image?: string | null;
     };
   }
@@ -21,16 +22,47 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
 
   secret: process.env.AUTH_SECRET,
-  adapter: PrismaAdapter(prisma),
+  // Removing Prisma adapter to use purely JWT-based auth
+  // adapter: PrismaAdapter(prisma),
 
   providers: [Google],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.email = user.email || undefined;
       }
+      
+      // If we have a token with an email, fetch or create the user in our database
+      if (token.email) {
+        try {
+          // Find or create user in our database
+          const dbUser = await prisma.user.upsert({
+            where: { email: token.email as string },
+            update: {}, // No updates needed if found
+            create: {
+              email: token.email as string,
+              name: token.name as string,
+              image: token.picture as string,
+              role: "default" // Default role for new users
+            },
+            select: { 
+              id: true,
+              role: true 
+            }
+          });
+          
+          // Update token with database ID and role
+          token.id = dbUser.id;
+          token.role = dbUser.role;
+          console.log(`User ${token.email} has role: ${token.role}`);
+        } catch (error) {
+          console.error("Error fetching/creating user in database:", error);
+          token.role = "default"; // Default role on error
+        }
+      }
+      
       return token;
     },
 
@@ -38,12 +70,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
+        session.user.role = token.role as string || "default";
+        console.log(`Session created for ${session.user.email} with role: ${session.user.role}`);
       }
       return session;
     },
 
     async redirect({ url, baseUrl }) {
-      return `${baseUrl}/dashboard`; 
+      return `${baseUrl}`; 
     },
 
     async authorized({ auth, request: { nextUrl } }) {

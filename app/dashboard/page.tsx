@@ -41,6 +41,9 @@ import type { Profile } from "@/app/actions/getProfile";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import jsQR from "jsqr";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const [scanResult, setScanResult] = useState<string | null>(null);
@@ -63,6 +66,39 @@ export default function Dashboard() {
     useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Add a state for available cameras
+  const [availableCameras, setAvailableCameras] = useState<
+    { id: string; label: string }[]
+  >([]);
+
+  // Add isAdmin and isUser variables for role-based permission checks
+  const { data: session, status } = useSession();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const router = useRouter();
+
+  // Check for default role and redirect to home
+  useEffect(() => {
+    if (!session && status !== "loading") {
+      // Redirect if not authenticated
+      toast.error("Please login to access this page");
+      router.push("/");
+      return;
+    }
+
+    // Only block the default role, allow readOnly to view
+    if (status === "authenticated" && session?.user?.role === "default") {
+      toast.error("You don't have permission to access this page.");
+      router.push("/");
+    }
+  }, [status, session, router]);
+
+  // Define role-based permission checks
+  const isAdmin = session?.user?.role === "admin";
+  const isUser = session?.user?.role === "user";
+  const isReadOnly = session?.user?.role === "readOnly";
+  console.log("Session ", session?.user?.role);
+  const canApprove = isAdmin || isUser; // ReadOnly can't approve
+
   useEffect(() => {
     // Initialize the scanner
     const html5QrCode = new Html5Qrcode("qr-reader");
@@ -79,43 +115,60 @@ export default function Dashboard() {
         // Get available cameras
         const devices = await Html5Qrcode.getCameras();
         if (devices && devices.length > 0) {
+          setAvailableCameras(devices);
           console.log("Available cameras:", devices);
 
-          // Try to find the main back camera using common naming patterns
-          // Main back cameras often have labels containing these terms
-          const mainBackCameraPatterns = [
-            /back(?!\s+ultra)/i, // "back" but not followed by "ultra"
-            /rear(?!\s+ultra)/i, // "rear" but not followed by "ultra"
-            /(?<!ultra\s+)back/i, // "back" not preceded by "ultra"
-            /(?<!ultra\s+)rear/i, // "rear" not preceded by "ultra"
-            /camera2/i, // Often used for main camera
-            /main camera/i, // Explicit "main camera"
-            /primary/i, // "primary" camera
-          ];
+          // Priority-based camera selection
+          // 1. First try to find camera with ID "0" (often the back camera on Android)
+          // 2. Then look for cameras with common back camera keywords in their labels
+          let selectedCamera = null;
 
-          // First try to find main camera using the patterns
-          let mainCamera = devices.find((device) =>
-            mainBackCameraPatterns.some((pattern) => pattern.test(device.label))
-          );
+          // Try to find a camera with ID "0"
+          selectedCamera = devices.find((device) => device.id === "0");
 
-          // If no specific main camera found, fall back to first "back" camera
-          if (!mainCamera) {
-            mainCamera = devices.find((device) =>
-              /back|rear/i.test(device.label)
+          if (!selectedCamera) {
+            // Try to find a camera with back camera keywords in order of priority
+            const backCameraKeywords = [
+              "back camera",
+              "facing back",
+              "camera2",
+              "environment",
+              "rear",
+            ];
+
+            for (const keyword of backCameraKeywords) {
+              selectedCamera = devices.find((device) =>
+                device.label.toLowerCase().includes(keyword)
+              );
+              if (selectedCamera) {
+                console.log(
+                  `Selected camera with keyword "${keyword}":`,
+                  selectedCamera
+                );
+                break;
+              }
+            }
+
+            // If still no match, try any camera with "back" in the name
+            if (!selectedCamera) {
+              selectedCamera = devices.find((device) =>
+                device.label.toLowerCase().includes("back")
+              );
+            }
+          }
+
+          // Default to first camera if no back camera found
+          if (!selectedCamera) {
+            selectedCamera = devices[0];
+            console.log(
+              "No back camera found, using first camera:",
+              selectedCamera
             );
+          } else {
+            console.log("Selected camera:", selectedCamera);
           }
 
-          // If still no match, use the first camera (usually the back one on mobile)
-          if (!mainCamera && devices.length > 1) {
-            // On mobile, the back camera is often the second in the list (index 1)
-            mainCamera = devices[1];
-          } else if (!mainCamera) {
-            // If only one camera or no other match, use the first one
-            mainCamera = devices[0];
-          }
-
-          console.log("Selected camera:", mainCamera);
-          setCameraId(mainCamera.id);
+          setCameraId(selectedCamera.id);
         }
       } catch (err) {
         setCameraPermission(false);
@@ -139,6 +192,90 @@ export default function Dashboard() {
     };
   }, []);
 
+  // Improved QR code processing function
+  const processQRResult = (decodedText: string) => {
+    console.log("Raw QR result:", decodedText);
+    let anubandhId = null;
+
+    try {
+      // Check if the text looks like JSON by checking for curly braces
+      if (
+        decodedText.trim().startsWith("{") &&
+        decodedText.trim().endsWith("}")
+      ) {
+        // Try to parse as JSON
+        const data = JSON.parse(decodedText);
+        console.log("Parsed QR data:", data);
+
+        // Extract ID using various possible field names
+        anubandhId = data.id || data.anubandhId || data.anubandh_id;
+
+        if (anubandhId) {
+          console.log("Found anubandhId in JSON:", anubandhId);
+          setScanResult(decodedText);
+          return;
+        }
+      }
+
+      // If it's not valid JSON or doesn't contain ID field, check if it's a direct ID
+      if (
+        typeof decodedText === "string" &&
+        decodedText.trim() &&
+        /^[A-Za-z0-9_-]{3,}$/.test(decodedText.trim())
+      ) {
+        console.log("Using raw string as anubandhId:", decodedText.trim());
+
+        // Wrap the plain ID in JSON for consistency with the ScannedDataDisplay component
+        const wrappedData = JSON.stringify({ id: decodedText.trim() });
+        setScanResult(wrappedData);
+        return;
+      }
+
+      // Fallback - just use the raw data
+      console.log("Using raw QR data");
+      setScanResult(decodedText);
+    } catch (error) {
+      console.error("Error processing QR code:", error);
+      setScanResult(decodedText); // Still set the result even if processing fails
+    }
+  };
+
+  const scanQRCode = () => {
+    if (!scanner) return;
+
+    const video = document.querySelector("video");
+    if (!video) return;
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Get image data from canvas
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+    // Process with jsQR
+    try {
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "attemptBoth", // Try both light-on-dark and dark-on-light QR codes
+      });
+
+      if (code) {
+        console.log("QR code detected:", code.data);
+        processQRResult(code.data);
+        stopScanning();
+      }
+    } catch (error) {
+      console.error("Error in jsQR:", error);
+    }
+  };
+
   const startCameraScanning = async () => {
     if (!scanner || !cameraId) return;
 
@@ -147,7 +284,13 @@ export default function Dashboard() {
     try {
       console.log("Starting camera with ID:", cameraId);
 
-      // Use explicit configuration to ensure we use the right camera
+      // First clear the qr-reader container
+      const readerElement = document.getElementById("qr-reader");
+      if (readerElement) {
+        readerElement.innerHTML = "";
+      }
+
+      // Use basic configuration options that are supported
       await scanner.start(
         cameraId,
         {
@@ -155,8 +298,8 @@ export default function Dashboard() {
           qrbox: { width: 250, height: 250 },
         },
         (decodedText) => {
-          // QR code successfully scanned
-          setScanResult(decodedText);
+          // QR code successfully scanned - process the result
+          processQRResult(decodedText);
           stopScanning();
         },
         (errorMessage) => {
@@ -164,6 +307,70 @@ export default function Dashboard() {
         }
       );
       setIsScanning(true);
+
+      // Add corner markers manually after scanner is initialized
+      setTimeout(() => {
+        const scanRegion = document.querySelector("#qr-reader .qr-region");
+        if (scanRegion) {
+          // Remove existing border if any
+          scanRegion.classList.add("qr-transparent-border");
+
+          // Add corner markers
+          const cornerSize = 20;
+          const cornerThickness = 3;
+          const corners = [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+          ];
+
+          corners.forEach((corner) => {
+            const cornerElement = document.createElement("div");
+            cornerElement.className = `qr-corner ${corner}`;
+            scanRegion.appendChild(cornerElement);
+          });
+
+          // Add CSS styles for corners
+          const style = document.createElement("style");
+          style.textContent = `
+            .qr-transparent-border {
+              border: 2px dashed transparent !important;
+            }
+            .qr-corner {
+              position: absolute;
+              width: ${cornerSize}px;
+              height: ${cornerSize}px;
+              border: ${cornerThickness}px solid #2563eb;
+            }
+            .qr-corner.top-left {
+              top: -2px;
+              left: -2px;
+              border-right: none;
+              border-bottom: none;
+            }
+            .qr-corner.top-right {
+              top: -2px;
+              right: -2px;
+              border-left: none;
+              border-bottom: none;
+            }
+            .qr-corner.bottom-left {
+              bottom: -2px;
+              left: -2px;
+              border-right: none;
+              border-top: none;
+            }
+            .qr-corner.bottom-right {
+              bottom: -2px;
+              right: -2px;
+              border-left: none;
+              border-top: none;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+      }, 500); // Wait a bit for the scanner to initialize its UI
     } catch (err) {
       console.error("Error starting camera:", err);
 
@@ -185,7 +392,7 @@ export default function Dashboard() {
               alternativeCameraId,
               { fps: 15, qrbox: { width: 250, height: 250 } },
               (decodedText) => {
-                setScanResult(decodedText);
+                processQRResult(decodedText);
                 stopScanning();
               },
               (errorMessage) => {
@@ -193,6 +400,31 @@ export default function Dashboard() {
               }
             );
             setIsScanning(true);
+
+            // Add same corner markers for fallback camera
+            setTimeout(() => {
+              const scanRegion = document.querySelector(
+                "#qr-reader .qr-region"
+              );
+              if (scanRegion) {
+                scanRegion.classList.add("qr-transparent-border");
+
+                const cornerSize = 20;
+                const cornerThickness = 3;
+                const corners = [
+                  "top-left",
+                  "top-right",
+                  "bottom-left",
+                  "bottom-right",
+                ];
+
+                corners.forEach((corner) => {
+                  const cornerElement = document.createElement("div");
+                  cornerElement.className = `qr-corner ${corner}`;
+                  scanRegion.appendChild(cornerElement);
+                });
+              }
+            }, 500);
           }
         }
       } catch (fallbackErr) {
@@ -256,12 +488,12 @@ export default function Dashboard() {
     };
     fileReader.readAsDataURL(imageFile);
 
-    // Decode the QR code from the image
+    // Decode the QR code from the image with improved configuration
     scanner
       .scanFile(imageFile, /* showImage= */ false)
       .then((decodedText: string) => {
         console.log("QR Code from image:", decodedText);
-        setScanResult(decodedText);
+        processQRResult(decodedText);
       })
       .catch((err: string) => {
         console.error("Error scanning QR code from image:", err);
@@ -312,6 +544,17 @@ export default function Dashboard() {
     }
   };
   useEffect(() => {
+    // Stop camera scanning when tab changes
+    if (scanner && scanner.isScanning) {
+      stopScanning()
+        .then(() => {
+          console.log("Camera stopped due to tab change");
+        })
+        .catch((err) => {
+          console.error("Error stopping camera on tab change:", err);
+        });
+    }
+
     // Reset states or perform refresh actions here
     setScanResult(null); // Reset scan results on tab switch
     setAnubandhId(""); // Clear Anubandh ID search
@@ -414,7 +657,7 @@ export default function Dashboard() {
       toast.success("Profile approved successfully");
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to approve profile";
+        error instanceof Error ? error.message : "Failed to approve entry";
       setSearchError(errorMessage);
       toast.error(errorMessage);
       console.error("Approval error:", error);
@@ -466,12 +709,12 @@ export default function Dashboard() {
   // console.log(searchResults.name);
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-end mb-4">
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-10">
+      <div className="flex justify-end mb-5">
         <Button
           variant="outline"
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 text-sm h-10 px-4"
         >
           <LogOut className="h-4 w-4" />
           Sign Out
@@ -484,35 +727,94 @@ export default function Dashboard() {
         value={activeTab}
         onValueChange={(value) => setActiveTab(value)}
       >
-        <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3">
-          <TabsTrigger value="scanner">
+        <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3 p-1 h-14">
+          <TabsTrigger value="scanner" className="text-sm py-3">
             <QrCode className="mr-2 h-4 w-4" />
-            Scanner
+            <span className="hidden xs:inline">Scanner</span>
+            <span className="xs:hidden">Scan</span>
           </TabsTrigger>
-          <TabsTrigger value="history">
+          <TabsTrigger value="history" className="text-sm py-3">
             <History className="mr-2 h-4 w-4" />
-            By Anubandh ID
+            Anubandh
           </TabsTrigger>
-          <TabsTrigger value="mobile">
+          <TabsTrigger value="mobile" className="text-sm py-3">
             <UserSearch className="mr-2 h-4 w-4" />
-            By Name/Mobile No.
+            <span className="hidden xs:inline">Name/Mobile No.</span>
+            <span className="xs:hidden">Search</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="scanner">
           <Card>
-            <CardHeader className="bg-slate-50 border-b">
+            <CardHeader className="bg-slate-50 border-b p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl">QR Code Scanner</CardTitle>
+                  <CardTitle className="text-xl">QR Scanner</CardTitle>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6">
               {cameraPermission === false && scanMode === "camera" ? (
-                <p className="text-red-500 text-center">
-                  Camera permission is required to scan QR codes.
-                </p>
+                <div className="flex flex-col items-center justify-center p-6 space-y-4 border-2 border-dashed border-red-300 rounded-lg bg-red-50">
+                  <div className="text-center space-y-2 mb-2">
+                    <p className="text-red-600 text-base font-medium">
+                      Camera access is required to scan QR codes
+                    </p>
+                    <p className="text-gray-600 text-sm">
+                      Click the button below to allow browser camera access.
+                      You&apos;ll see a permission prompt from your browser.
+                    </p>
+                    <p className="text-gray-500 text-xs mt-2">
+                      If you previously denied access, you may need to update
+                      your browser settings.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        // This will trigger the browser's permission prompt
+                        const stream =
+                          await navigator.mediaDevices.getUserMedia({
+                            video: true,
+                          });
+                        setCameraPermission(true);
+                        stream.getTracks().forEach((track) => track.stop());
+
+                        // Get available cameras after permission granted
+                        const devices = await Html5Qrcode.getCameras();
+                        if (devices && devices.length > 0) {
+                          setAvailableCameras(devices);
+                          const backCamera =
+                            devices.find(
+                              (device) =>
+                                device.id === "0" ||
+                                device.label.toLowerCase().includes("back") ||
+                                device.label.toLowerCase().includes("rear") ||
+                                device.label
+                                  .toLowerCase()
+                                  .includes("environment") ||
+                                device.label
+                                  .toLowerCase()
+                                  .includes("facing back") ||
+                                device.label.toLowerCase().includes("camera2")
+                            ) || devices[0];
+                          setCameraId(backCamera.id);
+                          startCameraScanning();
+                        }
+                      } catch (err) {
+                        console.error("Camera permission denied again:", err);
+                        setCameraPermission(false);
+                        toast.error(
+                          "Camera permission was denied. Please enable camera access in your browser settings and try again."
+                        );
+                      }
+                    }}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-12 px-6"
+                  >
+                    <Camera className="h-5 w-5" />
+                    Allow Camera Access
+                  </Button>
+                </div>
               ) : scanResult ? (
                 <ScannedDataDisplay
                   scanResult={scanResult}
@@ -520,23 +822,23 @@ export default function Dashboard() {
                 />
               ) : (
                 <>
-                  {/* Scan Mode Selection */}
-                  <div className="flex justify-center mb-4 gap-4">
+                  {/* Scan Mode Selection - make buttons bigger */}
+                  <div className="flex justify-center mb-5 gap-3">
                     <Button
                       variant={scanMode === "camera" ? "default" : "outline"}
                       onClick={() => handleScanModeChange("camera")}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-sm px-4 h-12 min-w-[120px]"
                     >
-                      <Camera className="h-4 w-4" />
-                      Camera
+                      <QrCode className="h-5 w-5" />
+                      Scan QR
                     </Button>
                     <Button
                       variant={scanMode === "image" ? "default" : "outline"}
                       onClick={() => handleScanModeChange("image")}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-sm px-4 h-12 min-w-[120px]"
                     >
-                      <Upload className="h-4 w-4" />
-                      Image
+                      <Upload className="h-5 w-5" />
+                      Upload
                     </Button>
                     {/* Hidden file input */}
                     <input
@@ -548,41 +850,77 @@ export default function Dashboard() {
                     />
                   </div>
 
-                  <div id="qr-reader" className="w-full max-w-md mx-auto" />
+                  {/* Make scanner area bigger on mobile */}
+                  <div
+                    id="qr-reader"
+                    className="w-full max-w-[300px] sm:max-w-md mx-auto"
+                  />
 
-                  <div className="flex justify-center mt-4">
+                  {/* Camera selection dropdown */}
+                  {scanMode === "camera" && availableCameras.length > 1 && (
+                    <div className="mt-3 flex justify-center">
+                      <div className="relative w-full max-w-[300px] sm:max-w-md">
+                        <select
+                          value={cameraId || ""}
+                          onChange={(e) => {
+                            const newCameraId = e.target.value;
+                            setCameraId(newCameraId);
+
+                            // If currently scanning, stop and restart with new camera
+                            if (scanner && scanner.isScanning) {
+                              scanner.stop().then(() => {
+                                setIsScanning(false);
+                                setTimeout(() => {
+                                  if (newCameraId) {
+                                    setCameraId(newCameraId);
+                                    startCameraScanning();
+                                  }
+                                }, 500);
+                              });
+                            } else if (newCameraId) {
+                              // If not scanning, just update the camera ID
+                              setCameraId(newCameraId);
+                              startCameraScanning();
+                            }
+                          }}
+                          className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        >
+                          <option value="" disabled>
+                            Select Camera
+                          </option>
+                          {availableCameras.map((camera) => (
+                            <option key={camera.id} value={camera.id}>
+                              {camera.label || `Camera ${camera.id}`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-center mt-5">
                     {scanMode === "camera" && (
                       <>
                         {isScanning ? (
                           <Button
                             variant="destructive"
                             onClick={stopScanning}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 text-sm px-5 h-12"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-5 w-5" />
                             Stop Scanning
                           </Button>
                         ) : (
-                          <Button
-                            onClick={startCameraScanning}
-                            className="flex items-center gap-2"
-                          >
-                            <QrCode className="h-4 w-4" />
-                            Start Scanning
-                          </Button>
+                          <></>
+                          // <Button
+                          //   onClick={startCameraScanning}
+                          //   className="flex items-center gap-2 text-sm px-5 h-12"
+                          // >
+                          //   <QrCode className="h-5 w-5" />
+                          //   Start Scanning
+                          // </Button>
                         )}
                       </>
-                    )}
-
-                    {scanMode === "image" && !isScanning && (
-                      <></>
-                      // <Button
-                      //   onClick={() => fileInputRef.current?.click()}
-                      //   className="flex items-center gap-2"
-                      // >
-                      //   {/* <Upload className="h-4 w-4" />
-                      //   Select Image */}
-                      // </Button>
                     )}
                   </div>
                 </>
@@ -593,35 +931,35 @@ export default function Dashboard() {
 
         <TabsContent value="history">
           <Card className="shadow-md">
-            <CardHeader className="bg-slate-50 border-b">
+            <CardHeader className="bg-slate-50 border-b p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-xl">
                     Anubandh Profile Verification
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm mt-1">
                     Search and approve profiles by Anubandh ID
                   </CardDescription>
                 </div>
                 <Badge
                   variant="outline"
-                  className="bg-blue-50 text-blue-700 hover:bg-blue-50"
+                  className="bg-blue-50 text-blue-700 hover:bg-blue-50 text-sm"
                 >
                   Search
                 </Badge>
               </div>
             </CardHeader>
 
-            <CardContent className="pt-6">
+            <CardContent className="pt-5 p-4 sm:p-6">
               <div className="flex gap-2 items-center">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder="Enter Anubandh ID"
                     value={anubandhId}
                     onChange={(e) => setAnubandhId(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-12 text-base"
                     onKeyDown={(e) =>
                       e.key === "Enter" && handleSearchByAnubandhId()
                     }
@@ -630,7 +968,7 @@ export default function Dashboard() {
                 <Button
                   onClick={handleSearchByAnubandhId}
                   disabled={isSearching || !anubandhId.trim()}
-                  className="gap-2"
+                  className="gap-2 h-12 text-sm px-4 min-w-[100px]"
                 >
                   <Search className="h-4 w-4" />
                   {isSearching ? "Searching..." : "Search"}
@@ -638,25 +976,25 @@ export default function Dashboard() {
               </div>
 
               {searchError && (
-                <Alert variant="destructive" className="mt-4">
+                <Alert variant="destructive" className="mt-4 text-sm">
                   <AlertDescription>{searchError}</AlertDescription>
                 </Alert>
               )}
 
               {profileData && (
-                <Card className="mt-6 border-slate-200">
-                  <CardHeader className="pb-2">
+                <Card className="mt-5 border-slate-200">
+                  <CardHeader className="pb-2 p-4 sm:p-6">
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-lg">Profile Details</CardTitle>
                       <Badge
                         variant={
                           profileData.approvalStatus ? "secondary" : "outline"
                         }
-                        className={
+                        className={`text-sm ${
                           profileData.approvalStatus
                             ? "bg-green-50 text-green-700 hover:bg-green-50"
                             : "bg-amber-50 text-amber-700 hover:bg-amber-50"
-                        }
+                        }`}
                       >
                         {profileData.approvalStatus
                           ? "Approved"
@@ -665,8 +1003,8 @@ export default function Dashboard() {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="p-6">
-                    <div className="flex flex-col space-y-6">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col space-y-5">
                       {/* Photo section - centered on mobile, left-aligned on desktop */}
                       <div className="flex justify-center md:justify-start">
                         {profileData.photo ? (
@@ -689,7 +1027,7 @@ export default function Dashboard() {
                       </div>
 
                       {/* Profile information */}
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-base">
                         <div>
                           <p className="text-sm text-muted-foreground">Name</p>
                           <p className="font-medium">{profileData.name}</p>
@@ -747,7 +1085,7 @@ export default function Dashboard() {
 
                         <div className="sm:col-span-2">
                           <p className="text-sm text-muted-foreground">
-                            Guest Count:-
+                            Guest Count:
                           </p>
                           <p className="font-medium">
                             {profileData.attendeeCount || 1}
@@ -771,59 +1109,62 @@ export default function Dashboard() {
                             )}
 
                           {/* For profiles that are either not approved, or approved but without introduction status */}
-                          {(!profileData.approvalStatus ||
-                            (profileData.approvalStatus &&
-                              !profileData.introductionStatus)) && (
-                            <div className="border-t pt-3 mt-1">
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id="introductionStatus"
-                                  checked={introductionChecked}
-                                  onCheckedChange={(checked) =>
-                                    setIntroductionChecked(checked === true)
-                                  }
-                                  disabled={isSubmitting}
-                                />
-                                <Label
-                                  htmlFor="introductionStatus"
-                                  className="font-medium cursor-pointer"
-                                >
-                                  Interested for Introduction
-                                </Label>
+                          {canApprove &&
+                            (!profileData.approvalStatus ||
+                              (profileData.approvalStatus &&
+                                !profileData.introductionStatus)) && (
+                              <div className="border-t pt-4 mt-1">
+                                <div className="flex items-center space-x-3">
+                                  <Checkbox
+                                    id="introductionStatus"
+                                    checked={introductionChecked}
+                                    onCheckedChange={(checked) =>
+                                      setIntroductionChecked(checked === true)
+                                    }
+                                    disabled={isSubmitting}
+                                    className="h-5 w-5"
+                                  />
+                                  <Label
+                                    htmlFor="introductionStatus"
+                                    className="font-medium cursor-pointer text-sm"
+                                  >
+                                    Interested for Introduction
+                                  </Label>
+                                </div>
+                                {!profileData.approvalStatus && (
+                                  <p className="text-gray-600 text-sm mt-2">
+                                    Introduction status will be saved when the
+                                    entry is approved
+                                  </p>
+                                )}
                               </div>
-                              {!profileData.approvalStatus && (
-                                <p className="text-gray-600 text-sm mt-1">
-                                  Introduction status will be saved when the
-                                  profile is approved
-                                </p>
-                              )}
-                            </div>
-                          )}
+                            )}
                         </div>
                       </div>
                     </div>
                   </CardContent>
 
-                  <CardFooter className="flex justify-end space-x-2 pt-2 pb-4">
+                  <CardFooter className="flex justify-end space-x-3 pt-2 pb-4 px-4 sm:px-6">
                     {/* Show approve button for profiles that are not approved */}
-                    {!profileData.approvalStatus && (
+                    {canApprove && !profileData.approvalStatus && (
                       <Button
                         onClick={handleApproveProfile}
                         disabled={isSubmitting}
-                        className="gap-2 bg-green-600 hover:bg-green-700"
+                        className="gap-2 bg-green-600 hover:bg-green-700 text-sm h-12 px-5"
                       >
                         <CheckCircle className="h-4 w-4" />
-                        {isSubmitting ? "Processing..." : "Approve Profile"}
+                        {isSubmitting ? "Processing..." : "Approve Entry"}
                       </Button>
                     )}
 
                     {/* Show update introduction status button for approved profiles without introduction status */}
-                    {profileData.approvalStatus &&
+                    {canApprove &&
+                      profileData.approvalStatus &&
                       !profileData.introductionStatus && (
                         <Button
                           onClick={handleUpdateIntroductionStatus}
                           disabled={isSubmitting}
-                          className="gap-2 bg-blue-600 hover:bg-blue-700"
+                          className="gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-12 px-5"
                         >
                           <CheckCircle className="h-4 w-4" />
                           {isSubmitting

@@ -10,6 +10,8 @@ generator client {
 enum Role {
   admin
   user
+  readOnly
+  default
 }
 
 model User {
@@ -20,7 +22,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  role          String          @default("user")
+  role          String          @default("default")
   // Optional for WebAuthn support
   Authenticator Authenticator[]
 

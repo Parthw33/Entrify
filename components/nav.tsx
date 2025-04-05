@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "./ui/button";
-import { signIn, useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
+import { useState, useEffect, useRef } from "react";
 import {
   Menu,
   X,
@@ -13,14 +13,30 @@ import {
   ShieldAlert,
   Clock,
   Heart,
+  Users,
+  UserCog,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 export function Nav() {
   const pathname = usePathname();
   const session = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Get user role from session
+  const userRole = session?.data?.user?.role || "default";
+  const isDefaultRole = userRole === "default";
 
   // Handle scroll effect for navbar
   useEffect(() => {
@@ -37,25 +53,65 @@ export function Nav() {
     setMenuOpen(false);
   }, [pathname]);
 
+  // Only include non-home routes if user is not in default role
   const navigation = [
     { name: "Home", href: "/", icon: <Home size={16} /> },
-    {
-      name: "Dashboard",
-      href: "/dashboard",
-      icon: <LayoutDashboard size={16} />,
-    },
-    { name: "Admin", href: "/admin", icon: <ShieldAlert size={16} /> },
-    {
-      name: "New Registrations",
-      href: "/newlyRegistered",
-      icon: <Clock size={16} />,
-    },
-    {
-      name: "Introduction View",
-      href: "/introductionView",
-      icon: <Heart size={16} />,
-    },
+    ...(isDefaultRole || !session?.data?.user
+      ? []
+      : [
+          {
+            name: "Dashboard",
+            href: "/dashboard",
+            icon: <LayoutDashboard size={16} />,
+          },
+          {
+            name:
+              session?.data?.user?.role === "admin"
+                ? "Admin"
+                : "Registered Users",
+            href: "/admin",
+            icon:
+              session?.data?.user?.role === "admin" ? (
+                <ShieldAlert size={16} />
+              ) : (
+                <Users size={16} />
+              ),
+          },
+          // Add the Manage Users link only for admins
+          ...(session?.data?.user?.role === "admin"
+            ? [
+                {
+                  name: "Manage Users",
+                  href: "/admin/manage-users",
+                  icon: <UserCog size={16} />,
+                },
+              ]
+            : []),
+          {
+            name: "New Registrations",
+            href: "/newlyRegistered",
+            icon: <Clock size={16} />,
+          },
+          {
+            name: "Introduction View",
+            href: "/introductionView",
+            icon: <Heart size={16} />,
+          },
+        ]),
   ];
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    const name = session?.data?.user?.name || "";
+    if (!name) return "U";
+
+    const nameParts = name.split(" ");
+    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
+
+    return (
+      nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+    ).toUpperCase();
+  };
 
   return (
     <header
@@ -102,29 +158,103 @@ export function Nav() {
               </Link>
             ))}
 
-            {/* Login Button Desktop */}
-            {session.status === "unauthenticated" && (
+            {/* Login Button or User Avatar with Dropdown Desktop */}
+            {!session.data ? (
               <Button
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                onClick={() => signIn("google", { callbackUrl: "/" })}
                 size="sm"
                 className="ml-4"
               >
                 Sign In
               </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 rounded-full ml-4 p-0"
+                  >
+                    <Avatar className="h-8 w-8 border-2 border-primary/10">
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex flex-col space-y-1 p-2">
+                    <p className="text-sm font-medium leading-none">
+                      {session.data.user?.name}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {session.data.user?.email}
+                    </p>
+                    <div className="mt-1 pt-1">
+                      <p className="text-xs text-muted-foreground border-t pt-1">
+                        Role: <span className="font-medium">{userRole}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <DropdownMenuItem
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="text-red-600 cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </nav>
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden">
-            {session.status === "unauthenticated" && (
+            {!session.data ? (
               <Button
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                onClick={() => signIn("google", { callbackUrl: "/" })}
                 size="sm"
                 variant="outline"
                 className="mr-2"
               >
                 Sign In
               </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full mr-2 p-0"
+                  >
+                    <Avatar className="h-8 w-8 border-2 border-primary/10">
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex flex-col space-y-1 p-2">
+                    <p className="text-sm font-medium leading-none">
+                      {session.data.user?.name}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {session.data.user?.email}
+                    </p>
+                    <div className="mt-1 pt-1">
+                      <p className="text-xs text-muted-foreground border-t pt-1">
+                        Role: <span className="font-medium">{userRole}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <DropdownMenuItem
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="text-red-600 cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             <Button
               onClick={() => setMenuOpen(!menuOpen)}
@@ -162,6 +292,16 @@ export function Nav() {
               {link.name}
             </Link>
           ))}
+          {/* Add sign out for mobile menu when logged in */}
+          {session.status === "authenticated" && (
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-colors text-red-600 hover:bg-red-50"
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
+          )}
         </div>
       </div>
     </header>

@@ -1,7 +1,9 @@
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { Toaster as HotToaster } from "react-hot-toast";
 import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -15,14 +17,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} flex flex-col min-h-screen`}>
         <SpeedInsights />
         <SessionProvider>
           <Nav />
-          {children}
+          <main className="flex-1">{children}</main>
+          <Footer />
           <Toaster />
+          <HotToaster position="bottom-right" />
         </SessionProvider>
-        <Toaster />
       </body>
     </html>
   );

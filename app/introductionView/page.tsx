@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -45,6 +47,8 @@ export default function IntroductionView() {
   const [profiles, setProfiles] = useState<Profile1[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [stats, setStats] = useState({
     total: 0,
     maleCount: 0,
@@ -61,6 +65,21 @@ export default function IntroductionView() {
     indexOfFirstProfile,
     indexOfLastProfile
   );
+
+  // Check for unauthenticated or default role users and redirect to home
+  useEffect(() => {
+    if (!session && status !== "loading") {
+      // Redirect if not authenticated
+      toast.error("Please login to access this page");
+      router.push("/");
+      return;
+    }
+
+    if (status === "authenticated" && session?.user?.role === "default") {
+      toast.error("You don't have permission to access this page.");
+      router.push("/");
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
     async function fetchProfiles() {

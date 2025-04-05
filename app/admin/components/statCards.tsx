@@ -111,10 +111,10 @@ export default function StatCards({ onApprovedClick }: StatsProps) {
               </span>
             </p>
             <div className="flex gap-2 mt-2 text-sm">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+              <Badge variant="outline" className="bg-green-50 text-blue-700">
                 Male: {stats.approvedMaleStats}
               </Badge>
-              <Badge variant="outline" className="bg-pink-50 text-pink-700">
+              <Badge variant="outline" className="bg-green-50 text-pink-700">
                 Female: {stats.approvedFemaleStats}
               </Badge>
             </div>
@@ -141,10 +141,10 @@ export default function StatCards({ onApprovedClick }: StatsProps) {
               </span>
             </p>
             <div className="flex gap-2 mt-2 text-sm">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+              <Badge variant="outline" className="bg-amber-50 text-blue-700">
                 Male: {stats.totalMaleStats - stats.approvedMaleStats}
               </Badge>
-              <Badge variant="outline" className="bg-pink-50 text-pink-700">
+              <Badge variant="outline" className="bg-amber-50 text-pink-700">
                 Female: {stats.totalFemaleStats - stats.approvedFemaleStats}
               </Badge>
             </div>

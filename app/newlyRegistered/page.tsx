@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -41,6 +43,8 @@ export default function NewlyRegisteredPage() {
   const [users, setUsers] = useState<Profile1[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   const ITEMS_PER_PAGE = 10;
   const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
@@ -49,6 +53,21 @@ export default function NewlyRegisteredPage() {
   const indexOfLastUser = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstUser = indexOfLastUser - ITEMS_PER_PAGE;
   const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+
+  // Check for unauthenticated or default role users and redirect to home
+  useEffect(() => {
+    if (!session && status !== "loading") {
+      // Redirect if not authenticated
+      toast.error("Please login to access this page");
+      router.push("/");
+      return;
+    }
+
+    if (status === "authenticated" && session?.user?.role === "default") {
+      toast.error("You don't have permission to access this page.");
+      router.push("/");
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
     async function fetchUsers() {

@@ -47,6 +47,8 @@ import { updateApprovalStatus } from "@/app/actions/updateApprovalStatus";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 interface UserTableProps {
   users: Profile1[];
@@ -62,6 +64,12 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
   const [dialogBox, setDialogBox] = useState(false);
   const [introductionChecked, setIntroductionChecked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+  const isUser = session?.user?.role === "user";
+  const isReadOnly = session?.user?.role === "readOnly";
+  const isDefault = session?.user?.role === "default";
+  const canApprove = isAdmin || isUser;
 
   // Filter users based on search query, approval status, and gender
   const filteredUsers = users.filter((user) => {
@@ -120,7 +128,7 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
       }, 1500);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to approve profile";
+        error instanceof Error ? error.message : "Failed to approve entry";
       toast.error(errorMessage);
       console.error("Approval error:", error);
     } finally {
@@ -458,29 +466,36 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                   </div>
                 </p>
 
-                {/* Introduction Status Checkbox - shown when profile is approved but introductionStatus is false, 
-                    OR when profile is not yet approved */}
-                {(selectedUser.approvalStatus &&
-                  !selectedUser.introductionStatus) ||
-                !selectedUser.approvalStatus ? (
-                  <div className="mt-4 border-t pt-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="introductionStatus"
-                        checked={introductionChecked}
-                        onCheckedChange={(checked) =>
-                          setIntroductionChecked(checked === true)
-                        }
-                      />
-                      <Label
-                        htmlFor="introductionStatus"
-                        className="font-medium cursor-pointer"
-                      >
-                        Interested for Introduction
-                      </Label>
-                    </div>
+                {/* Introduction Status Checkbox - shown when profile is approved but introductionStatus is false,
+                    or when profile is not approved (in which case it will be used when approving) */}
+                {canApprove && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`introductionStatus-${selectedUser.id}`}
+                      checked={introductionChecked}
+                      onCheckedChange={(checked) =>
+                        setIntroductionChecked(checked === true)
+                      }
+                      disabled={isSubmitting}
+                    />
+                    <Label
+                      htmlFor={`introductionStatus-${selectedUser.id}`}
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Interested for Introduction
+                    </Label>
                   </div>
-                ) : null}
+                )}
+
+                {/* Show explanation if not approved but checkbox is checked */}
+                {!selectedUser.approvalStatus &&
+                  introductionChecked &&
+                  canApprove && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Introduction status will be saved when the entry is
+                      approved
+                    </p>
+                  )}
 
                 {/* If already approved and has introduction status, show it as text */}
                 {selectedUser.approvalStatus &&
@@ -491,32 +506,51 @@ const UserTable: React.FC<UserTableProps> = ({ users }) => {
                     </div>
                   )}
 
-                {/* Message to indicate introduction can be set during approval */}
-                {!selectedUser.approvalStatus && (
-                  <div className="text-gray-600 text-sm mt-1">
-                    <p>
-                      Introduction status will be saved when the profile is
-                      approved
-                    </p>
-                  </div>
+                {/* Approve button - shown only when profile is not approved */}
+                {!selectedUser.approvalStatus && canApprove && (
+                  <Button
+                    onClick={handleApproveProfile}
+                    disabled={isSubmitting}
+                    className="gap-1 bg-green-600 hover:bg-green-700"
+                    size="sm"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    {isSubmitting ? "Processing..." : "Approve Entry"}
+                  </Button>
                 )}
+
+                {/* Update Introduction Status button - shown ONLY when profile is already approved but introductionStatus is false */}
+                {selectedUser.approvalStatus &&
+                  !selectedUser.introductionStatus &&
+                  canApprove && (
+                    <Button
+                      onClick={handleUpdateIntroductionStatus}
+                      disabled={isSubmitting}
+                      className="gap-1 bg-blue-600 hover:bg-blue-700"
+                      size="sm"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      {isSubmitting ? "Saving..." : "Set Introduction Status"}
+                    </Button>
+                  )}
               </div>
             </DialogDescription>
             <DialogFooter className="flex justify-end pt-4 space-x-2">
-              {!selectedUser.approvalStatus && (
+              {!selectedUser.approvalStatus && canApprove && (
                 <button
                   onClick={handleApproveProfile}
                   disabled={isSubmitting}
                   className="gap-2 bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg flex items-center"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  {isSubmitting ? "Processing..." : "Approve Profile"}
+                  {isSubmitting ? "Processing..." : "Approve Entry"}
                 </button>
               )}
 
               {/* Update Introduction Status button - shown ONLY when profile is already approved but introductionStatus is false */}
               {selectedUser.approvalStatus &&
-                !selectedUser.introductionStatus && (
+                !selectedUser.introductionStatus &&
+                canApprove && (
                   <button
                     onClick={handleUpdateIntroductionStatus}
                     disabled={isSubmitting}

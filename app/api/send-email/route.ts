@@ -34,9 +34,9 @@ export async function POST(req: Request) {
 
           <!-- Welcome Message -->
           <div style="padding: 20px;">
-            <h2 style="color: #333;">प्रिय ${name},</h2>
-            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">पंढरपूर येथील <strong>"स्नेह बंध मेळावा"</strong> कार्यक्रमात आपली यशस्वीरित्या नोंदणी झाली आहे. आपण आपल्या ओळखपत्रासाठी QR कोड सोबत जोडला आहे.</p>
-            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">कृपया खालील माहिती तपासून पहा:</p>
+            <h2 style="color: #333;">Hi ${name},</h2>
+            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">पंढरपूर येथील <strong>"स्नेह बंध मेळावा 2025"</strong> कार्यक्रमात आपली यशस्वीरित्या नोंदणी झाली आहे.</p>
+            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">माहिती :</p>
           </div>
 
           <!-- User Details Table -->
@@ -51,10 +51,17 @@ export async function POST(req: Request) {
 
           <div style="padding: 20px;">
             <h2 style="color: #333;">मेळावा स्थान:- </h2>
-            <p style="margin-bottom: 10px;">स्वर्गीय प्रभाकरराव अबाजी पटंगे प्रेक्षागृह, राम मंदिरासमोर, गाडगे महाराज पुतळ्याजवळ, बसस्थानकाच्या मागे, श्री विठ्ठल रूक्मिणी मंदिर, पंढरपूर</p>
-            <a href="https://maps.app.goo.gl/c7hYiGzkfDVZDWrT9?g_st=aw" style="display: inline-block; background-color: #4285F4; color: white; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-top: 10px;">
-              <span style="vertical-align: middle;">📌 Google Maps वर स्थान पहा</span>
-            </a>
+            <p style="margin-bottom: 10px;">श्री. मनमाडकर (भक्तिधाम) LIC ऑफिस समोर, पंढरपूर</p>
+            <div style="text-align: center; margin: 20px 0;">
+              <a href="https://maps.app.goo.gl/c7hYiGzkfDVZDWrT9?g_st=aw" style="display: inline-block; background-color: #4285F4; color: white; padding: 10px 15px; border-radius: 4px; text-decoration: none; font-weight: bold;">
+                <span style="vertical-align: middle; display: inline-flex; align-items: center;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" style="margin-right: 8px;">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                  </svg>
+                  Google Maps वर स्थान पहा
+                </span>
+              </a>
+            </div>
             <p style="margin-top: 15px; font-style: italic; color: #666;">दिनांक: 13 April 2024 | वेळ: सकाळी 9:00 ते संध्याकाळी 6:00</p>
           </div>
 

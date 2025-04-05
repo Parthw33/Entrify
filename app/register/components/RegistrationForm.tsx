@@ -207,13 +207,16 @@ const RegistrationForm: React.FC = () => {
         gender: formData.gender,
       });
 
-      // Create QR data (exclude photo file)
-      const { photo, ...dataForQR } = formData;
+      // Create a simplified QR data format to ensure compatibility
+      // Only include essential information in a compact format
       const qrDataObj = {
-        ...dataForQR,
-        photoUrl: photoUrl,
-        profileId: result.profile.id,
+        id: formData.anubandhId,
+        name: formData.name,
+        mobile: formData.mobileNumber,
+        attendees: formData.attendeeCount,
       };
+
+      // Convert to JSON string with minimal whitespace
       const qrDataString = JSON.stringify(qrDataObj);
 
       setQrData(qrDataString);
@@ -622,8 +625,23 @@ const RegistrationForm: React.FC = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Scan this QR code at the event for quick check-in
                 </p>
-                <div className="bg-white p-4 rounded-lg inline-block">
-                  <QRCodeSVG value={qrData} size={200} level="L" />
+                <div className="bg-white p-6 rounded-lg inline-block">
+                  <QRCodeSVG
+                    value={qrData}
+                    size={220}
+                    level="M"
+                    includeMargin={true}
+                    bgColor={"#ffffff"}
+                    fgColor={"#000000"}
+                    imageSettings={{
+                      src: "/logo.png",
+                      x: undefined,
+                      y: undefined,
+                      height: 40,
+                      width: 40,
+                      excavate: true,
+                    }}
+                  />
                 </div>
               </div>
 

@@ -35,6 +35,9 @@ export default function Home() {
     approvedMaleStats: 0,
     totalMaleStats: 0,
     totalFemaleStats: 0,
+    totalGuestCount: 0,
+    maleGuestCount: 0,
+    femaleGuestCount: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -138,7 +141,8 @@ export default function Home() {
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <Link href="/dashboard">
                   <Button size="lg" className="gap-2 h-12 px-6">
-                    Get Started <ArrowRight className="h-4 w-4" />
+                    Get Started (QR कोड Scan)
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/register">
@@ -147,7 +151,7 @@ export default function Home() {
                     size="lg"
                     className="gap-2 h-12 px-6 border-2"
                   >
-                    New Registration
+                    New Registration (नोंदणी करा)
                   </Button>
                 </Link>
               </div>
@@ -159,8 +163,8 @@ export default function Home() {
                 </h3>
 
                 {isLoading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                    {[...Array(3)].map((_, i) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                    {[...Array(4)].map((_, i) => (
                       <div
                         key={i}
                         className="bg-white rounded-lg shadow-sm border p-4"
@@ -171,7 +175,7 @@ export default function Home() {
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
                     {/* Total Registrations */}
                     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
                       <div className="bg-blue-50 px-4 py-2 border-b flex justify-between items-center">
@@ -182,20 +186,20 @@ export default function Home() {
                       </div>
                       <div className="p-4">
                         <p className="text-3xl font-bold text-blue-800">
-                          {stats.total}
+                          {stats?.total}
                         </p>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <Badge
                             variant="outline"
                             className="bg-blue-50 text-blue-600"
                           >
-                            Male: {stats.totalMaleStats}
+                            Male: {stats?.totalMaleStats}
                           </Badge>
                           <Badge
                             variant="outline"
                             className="bg-pink-50 text-pink-600"
                           >
-                            Female: {stats.totalFemaleStats}
+                            Female: {stats?.totalFemaleStats}
                           </Badge>
                         </div>
                       </div>
@@ -211,11 +215,11 @@ export default function Home() {
                       </div>
                       <div className="p-4">
                         <p className="text-3xl font-bold text-green-800">
-                          {stats.approved}
+                          {stats?.approved}
                           <span className="text-sm font-normal text-slate-500 ml-2">
                             (
                             {Math.round(
-                              (stats.approved / (stats.total || 1)) * 100
+                              (stats?.approved / (stats?.total || 1)) * 100
                             )}
                             %)
                           </span>
@@ -251,7 +255,7 @@ export default function Home() {
                           <span className="text-sm font-normal text-slate-500 ml-2">
                             (
                             {Math.round(
-                              (stats.pending / (stats.total || 1)) * 100
+                              (stats?.pending / (stats?.total || 1)) * 100
                             )}
                             %)
                           </span>
@@ -262,14 +266,47 @@ export default function Home() {
                             className="bg-blue-50 text-blue-600"
                           >
                             Male:{" "}
-                            {stats.totalMaleStats - stats.approvedMaleStats}
+                            {stats?.totalMaleStats - stats?.approvedMaleStats}
                           </Badge>
                           <Badge
                             variant="outline"
                             className="bg-pink-50 text-pink-600"
                           >
                             Female:{" "}
-                            {stats.totalFemaleStats - stats.approvedFemaleStats}
+                            {stats?.totalFemaleStats -
+                              stats?.approvedFemaleStats}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Guest Count */}
+                    <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                      <div className="bg-purple-50 px-4 py-2 border-b flex justify-between items-center">
+                        <h4 className="font-medium text-purple-800">
+                          Total Guests
+                        </h4>
+                        <Users className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div className="p-4">
+                        <p className="text-3xl font-bold text-purple-800">
+                          {stats?.totalGuestCount}
+                          <span className="text-sm font-normal text-slate-500 ml-2">
+                            (Approved Only)
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-50 text-blue-600"
+                          >
+                            With Male: {stats?.maleGuestCount}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="bg-pink-50 text-pink-600"
+                          >
+                            With Female: {stats?.femaleGuestCount}
                           </Badge>
                         </div>
                       </div>
@@ -286,30 +323,37 @@ export default function Home() {
       <section className="bg-slate-50 py-16">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold">
-              कार्यक्रम वैशिष्ट्ये
-            </h2>
+            <h2 className="text-2xl md:text-3xl font-bold">Website Insights</h2>
             <div className="mt-2 h-1 w-16 bg-primary mx-auto rounded-full"></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card
+              <Link
+                href={
+                  feature.title === "QR कोड स्कॅनिंग"
+                    ? "/dashboard"
+                    : feature.title === "नोंदणी प्रक्रिया"
+                    ? "/register"
+                    : "#"
+                }
                 key={index}
-                className="border bg-white shadow-sm hover:shadow-md transition-shadow"
+                className="block hover:no-underline"
               >
-                <CardHeader className="pb-2">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
+                <Card className="border bg-white shadow-sm hover:shadow-md transition-shadow h-full">
+                  <CardHeader className="pb-2">
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
+                      {feature.icon}
+                    </div>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base">
+                      {feature.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
