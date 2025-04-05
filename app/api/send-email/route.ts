@@ -77,6 +77,7 @@ export async function POST(req: Request) {
           <div style="text-align: center; font-size: 12px; color: #777; padding: 10px; background: #f8f9fa; border-top: 1px solid #ddd;">
             <p>Designed & Developed By <strong>DataElegance Solutions LLP</strong></p>
             <p>Rajendra Wattamwar & Sulbha Wattamwar</p>
+            <p>Contact Details: 8087067067/8788363612</p>
           </div>
         </div>
       `,

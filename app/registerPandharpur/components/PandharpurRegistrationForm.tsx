@@ -1368,11 +1368,11 @@ const PandharpurRegistrationForm: React.FC = () => {
               </p>
 
               <Button
-                onClick={() => router.push("/")}
+                onClick={() => router.refresh}
                 variant="outline"
                 className="mt-4"
               >
-                Return to Home
+                Register New (Pandharpur only)
               </Button>
             </div>
           </CardContent>

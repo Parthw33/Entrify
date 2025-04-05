@@ -12,7 +12,7 @@ export function Footer() {
             Rajendra Wattamwar & Sulbha Wattamwar
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            Contact Number (8087067067 & 8788363612)
+            Contact Details: 8087067067/8788363612
           </p>
         </div>
       </div>
