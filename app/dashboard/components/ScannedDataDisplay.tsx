@@ -540,17 +540,21 @@ export default function ScannedDataDisplay({
                 <Button
                   onClick={handleUpdateIntroduction}
                   disabled={isSubmitting}
-                  className="gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-12 px-5"
+                  className="gap-1 md:gap-2 bg-blue-600 hover:bg-blue-700 text-xs md:text-sm h-9 md:h-12 px-3 md:px-5 w-full md:w-auto flex items-center justify-center"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing...
+                      <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin" />
+                      <span className="hidden xs:inline">Processing...</span>
+                      <span className="xs:hidden">Processing</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-4 w-4" />
-                      Set Introduction Status
+                      <CheckCircle className="h-3 w-3 md:h-4 md:w-4" />
+                      <span className="hidden xs:inline">
+                        Set Introduction Status
+                      </span>
+                      <span className="xs:hidden">Update Status</span>
                     </>
                   )}
                 </Button>
