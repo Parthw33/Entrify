@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.8.0",
+    "@babel/runtime": "^7.27.0",
     "@fontsource/noto-sans-devanagari": "^5.2.5",
     "@hookform/resolvers": "^4.1.3",
+    "@pdf-lib/fontkit": "^1.1.1",
     "@prisma/client": "^6.4.1",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -81,6 +83,7 @@
     "react-qr-scanner": "^1.0.0-alpha.11",
     "react-resizable-panels": "^2.1.7",
     "recharts": "^2.15.1",
+    "regenerator-runtime": "^0.14.1",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss": "3.3.3",
@@ -91,6 +94,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@babel/plugin-transform-runtime": "^7.26.10",
     "@types/jspdf": "^2.0.0",
     "@types/nodemailer": "^6.4.17",
     "@types/papaparse": "^5.3.15",

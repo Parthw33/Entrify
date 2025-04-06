@@ -63,7 +63,10 @@ export default function NewlyRegisteredPage() {
       return;
     }
 
-    if (status === "authenticated" && session?.user?.role === "default") {
+    if (
+      (status === "authenticated" && session?.user?.role === "default") ||
+      session?.user?.role === "readOnly"
+    ) {
       toast.error("You don't have permission to access this page.");
       router.push("/");
     }

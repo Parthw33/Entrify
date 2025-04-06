@@ -1,36 +1,39 @@
+"use client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import UserTable from "./allUserTable";
-import { Profile, Profile1 } from "./approvedProfileRow";
+import PandharpurTable from "./pandharpurTable";
+import {
+  PandharpurProfileData,
+  getPandharpurProfiles,
+} from "@/app/actions/getPandharpurProfiles";
 import { useState, useEffect } from "react";
-import { getAllUsers } from "@/app/actions/getAllUsers";
 
-export default function UsersTableWithSkeleton() {
-  const [users, setUsers] = useState<Profile1[]>([]);
+export default function PandharpurTableWithSkeleton() {
+  const [profiles, setProfiles] = useState<PandharpurProfileData[]>([]);
   const [isTableLoading, setIsTableLoading] = useState(true);
 
-  // Function to fetch users data that can be called whenever needed
-  const fetchUsers = async () => {
+  // Function to fetch profiles data that can be called whenever needed
+  const fetchProfiles = async () => {
     setIsTableLoading(true);
     try {
-      const data = await getAllUsers();
-      setUsers(data.allUsers);
+      const data = await getPandharpurProfiles();
+      setProfiles(data.profiles);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching Pandharpur profiles:", error);
     } finally {
       setIsTableLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchProfiles();
   }, []);
 
   if (isTableLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>All Registered Users</CardTitle>
+          <CardTitle>Pandharpur Profiles</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -68,5 +71,5 @@ export default function UsersTableWithSkeleton() {
     );
   }
 
-  return <UserTable users={users} refetchData={fetchUsers} />;
+  return <PandharpurTable profiles={profiles} refetchData={fetchProfiles} />;
 }

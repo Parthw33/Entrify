@@ -22,6 +22,8 @@ import {
   User,
   CheckCircle,
   UserSearch,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import ScannedDataDisplay from "./components/ScannedDataDisplay";
@@ -44,6 +46,7 @@ import { Label } from "@/components/ui/label";
 import jsQR from "jsqr";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Slider } from "@/components/ui/slider";
 
 export default function Dashboard() {
   const [scanResult, setScanResult] = useState<string | null>(null);
@@ -65,6 +68,8 @@ export default function Dashboard() {
   const [introductionChecked, setIntroductionChecked] =
     useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const isFemaleProfile = profileData?.gender?.toLowerCase() === "female";
 
   // Add a state for available cameras
   const [availableCameras, setAvailableCameras] = useState<
@@ -98,6 +103,50 @@ export default function Dashboard() {
   const isReadOnly = session?.user?.role === "readOnly";
   console.log("Session ", session?.user?.role);
   const canApprove = isAdmin || isUser; // ReadOnly can't approve
+  const [guestCount, setGuestCount] = useState<number>(1);
+
+  const handleGuestCountChange = (value: number[]) => {
+    const numValue = value[0];
+
+    // Update the guest count
+    setGuestCount(numValue);
+
+    // Update profileData with the new guest count
+    if (profileData) {
+      setProfileData({
+        ...profileData,
+        attendeeCount: numValue,
+      });
+    }
+  };
+
+  const incrementGuestCount = () => {
+    if (guestCount < 10) {
+      const newCount = guestCount + 1;
+      setGuestCount(newCount);
+
+      if (profileData) {
+        setProfileData({
+          ...profileData,
+          attendeeCount: newCount,
+        });
+      }
+    }
+  };
+
+  const decrementGuestCount = () => {
+    if (guestCount > 1) {
+      const newCount = guestCount - 1;
+      setGuestCount(newCount);
+
+      if (profileData) {
+        setProfileData({
+          ...profileData,
+          attendeeCount: newCount,
+        });
+      }
+    }
+  };
 
   useEffect(() => {
     // Initialize the scanner
@@ -115,59 +164,12 @@ export default function Dashboard() {
         // Get available cameras
         const devices = await Html5Qrcode.getCameras();
         if (devices && devices.length > 0) {
-          setAvailableCameras(devices);
-          console.log("Available cameras:", devices);
-
-          // Priority-based camera selection
-          // 1. First try to find camera with ID "0" (often the back camera on Android)
-          // 2. Then look for cameras with common back camera keywords in their labels
-          let selectedCamera = null;
-
-          // Try to find a camera with ID "0"
-          selectedCamera = devices.find((device) => device.id === "0");
-
-          // if (!selectedCamera) {
-          // // Try to find a camera with back camera keywords in order of priority
-          // const backCameraKeywords = [
-          //   "back camera",
-          //   "facing back",
-          //   "camera2",
-          //   "environment",
-          //   "rear",
-          // ];
-
-          // for (const keyword of backCameraKeywords) {
-          //   selectedCamera = devices.find((device) =>
-          //     device.label.toLowerCase().includes(keyword)
-          //   );
-          //   if (selectedCamera) {
-          //     console.log(
-          //       `Selected camera with keyword "${keyword}":`,
-          //       selectedCamera
-          //     );
-          //     break;
-          //   }
-          // }
-
-          // If still no match, try any camera with "back" in the name
-          if (!selectedCamera) {
-            selectedCamera = devices.find((device) =>
+          // Prefer back camera if available
+          const backCamera =
+            devices.find((device) =>
               device.label.toLowerCase().includes("back")
-            );
-          }
-
-          // Default to first camera if no back camera found
-          if (!selectedCamera) {
-            selectedCamera = devices[0];
-            console.log(
-              "No back camera found, using first camera:",
-              selectedCamera
-            );
-          } else {
-            console.log("Selected camera:", selectedCamera);
-          }
-
-          setCameraId(selectedCamera.id);
+            ) || devices[0];
+          setCameraId(backCamera.id);
         }
       } catch (err) {
         setCameraPermission(false);
@@ -534,12 +536,15 @@ export default function Dashboard() {
     }
   };
 
-  const handleRestartScanning = () => {
+  const handleRestartScanning = async () => {
     setScanResult(null);
-    if (scanMode === "camera") {
-      startCameraScanning();
-    } else {
-      prepareImageUploadUI();
+    const devices = await Html5Qrcode.getCameras();
+    if (devices && devices.length > 0) {
+      // Prefer back camera if available
+      const backCamera =
+        devices.find((device) => device.label.toLowerCase().includes("back")) ||
+        devices[0];
+      setCameraId(backCamera.id);
     }
   };
   useEffect(() => {
@@ -715,17 +720,6 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-10">
-      <div className="flex justify-end mb-5">
-        <Button
-          variant="outline"
-          onClick={() => signOut({ callbackUrl: "/" })}
-          className="flex items-center gap-2 text-sm h-10 px-4"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
-      </div>
-
       <Tabs
         defaultValue="scanner"
         className="space-y-4"
@@ -860,48 +854,6 @@ export default function Dashboard() {
                     id="qr-reader"
                     className="w-full max-w-[300px] sm:max-w-md mx-auto"
                   />
-
-                  {/* Camera selection dropdown */}
-                  {scanMode === "camera" && availableCameras.length > 1 && (
-                    <div className="mt-3 flex justify-center">
-                      <div className="relative w-full max-w-[300px] sm:max-w-md">
-                        <select
-                          value={cameraId || ""}
-                          onChange={(e) => {
-                            const newCameraId = e.target.value;
-                            setCameraId(newCameraId);
-
-                            // If currently scanning, stop and restart with new camera
-                            if (scanner && scanner.isScanning) {
-                              scanner.stop().then(() => {
-                                setIsScanning(false);
-                                setTimeout(() => {
-                                  if (newCameraId) {
-                                    setCameraId(newCameraId);
-                                    startCameraScanning();
-                                  }
-                                }, 500);
-                              });
-                            } else if (newCameraId) {
-                              // If not scanning, just update the camera ID
-                              setCameraId(newCameraId);
-                              startCameraScanning();
-                            }
-                          }}
-                          className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        >
-                          <option value="" disabled>
-                            Select Camera
-                          </option>
-                          {availableCameras.map((camera) => (
-                            <option key={camera.id} value={camera.id}>
-                              {camera.label || `Camera ${camera.id}`}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
 
                   <div className="flex justify-center mt-5">
                     {scanMode === "camera" && (
@@ -1088,13 +1040,69 @@ export default function Dashboard() {
                           <p className="font-medium">{profileData.education}</p>
                         </div>
 
-                        <div className="sm:col-span-2">
-                          <p className="text-sm text-muted-foreground">
-                            Guest Count:
+                        <div className="sm:col-span-2 mt-2">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Guest Count (Including Self)
                           </p>
-                          <p className="font-medium">
-                            {profileData.attendeeCount || 1}
-                          </p>
+
+                          {isFemaleProfile &&
+                          !isReadOnly &&
+                          !profileData.approvalStatus ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={decrementGuestCount}
+                                  disabled={guestCount <= 1}
+                                  className="h-8 w-8"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <div className="font-medium text-center w-16">
+                                  {guestCount}{" "}
+                                  {guestCount === 1 ? "Person" : "Persons"}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={incrementGuestCount}
+                                  disabled={guestCount >= 10}
+                                  className="h-8 w-8"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              <div className="px-2">
+                                <Slider
+                                  value={[guestCount]}
+                                  min={1}
+                                  max={10}
+                                  step={1}
+                                  onValueChange={handleGuestCountChange}
+                                  className="mt-2"
+                                />
+                                <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                                  <span>1</span>
+                                  <span>5</span>
+                                  <span>10</span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="font-medium">
+                              {guestCount}{" "}
+                              {guestCount === 1 ? "Person" : "Persons"}
+                              {!isFemaleProfile &&
+                                !isReadOnly &&
+                                !profileData.approvalStatus && (
+                                  <span className="text-xs text-amber-600 ml-2">
+                                    (Only female profiles can edit guest count)
+                                  </span>
+                                )}
+                            </p>
+                          )}
                         </div>
 
                         {/* Introduction Status - show checkbox or status */}

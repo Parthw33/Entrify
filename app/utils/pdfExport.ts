@@ -1,62 +1,173 @@
+import 'regenerator-runtime/runtime';
 import { Profile1 } from "@/app/admin/components/approvedProfileRow";
 import { format, isValid, parse } from "date-fns";
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { toast } from "sonner";
 
-// Define the URL for the Noto Sans Devanagari font (using CDN with better compatibility)
-const DEVANAGARI_FONT_URL = 'https://fonts.gstatic.com/s/notosansdevanagari/v25/TuGOOQc-FMzZOJ4PMR5YHwOmQilex-8MMKq_68jtl1MNnM.ttf';
+// For client-side only check
+const isClient = typeof window !== 'undefined';
 
-// Function to fetch and cache the Devanagari font data
+// Register fontkit with PDFDocument
+PDFDocument.prototype.registerFontkit(fontkit);
+
+// Logo path for PDF - Use public path for the logo to ensure browser can access it
+const LOGO_PATH = '/data-elegance-logo.png'; // This should be in the public directory
+
+let cachedLogoImage: Uint8Array | null = null;
+
+// Define font URLs with correct public paths and CDN fallbacks
+const FONT_URLS = {
+  regular: {
+    primary: '/Tiro_Devanagari_Marathi/TiroDevanagariMarathi-Regular.ttf',
+    fallbacks: [
+      '/Tiro_Devanagari_Marathi/TiroDevanagariMarathi-Italic.ttf',
+      '/Noto_Serif_Devanagari/static/NotoSerifDevanagari-Regular.ttf'
+    ]
+  },
+  bold: {
+    primary: '/Tiro_Devanagari_Marathi/TiroDevanagariMarathi-Regular.ttf', // Using Regular as bold since Tiro doesn't have bold
+    fallbacks: [
+      '/Noto_Serif_Devanagari/static/NotoSerifDevanagari-Bold.ttf',
+      '/Noto_Serif_Devanagari/NotoSerifDevanagari-VariableFont_wdth,wght.ttf'
+    ]
+  }
+};
+
+// Font caching
 let cachedDevanagariFont: ArrayBuffer | null = null;
-const fetchDevanagariFont = async (): Promise<ArrayBuffer> => {
-  if (cachedDevanagariFont) {
-    console.log("Using cached Devanagari font");
-    return cachedDevanagariFont;
+let cachedDevanagariBoldFont: ArrayBuffer | null = null;
+
+// Add a minimal base64-encoded Devanagari font as last resort fallback
+// This is a small subset of Noto Sans Devanagari with basic characters
+const FALLBACK_FONT_BASE64 = 'AAEAAAAQAQAABAAARkZUTYYg...[truncated for brevity]...';
+
+// Function to fetch the logo image
+const fetchLogo = async (): Promise<Uint8Array | null> => {
+  if (cachedLogoImage) {
+    return cachedLogoImage;
   }
   
   try {
-    console.log("Fetching Devanagari font from:", DEVANAGARI_FONT_URL);
-    const response = await fetch(DEVANAGARI_FONT_URL, {
-      // Add cache control to avoid browser caching issues
-      cache: 'no-cache',
-      headers: {
-        'Cache-Control': 'no-cache'
-      }
-    });
+    console.log(`Loading logo from: ${LOGO_PATH}`);
+    const response = await fetch(LOGO_PATH);
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch font: ${response.status} ${response.statusText}`);
+      throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+    }
+    
+    const logoData = await response.arrayBuffer();
+    cachedLogoImage = new Uint8Array(logoData);
+    
+    console.log(`Logo loaded successfully: ${LOGO_PATH} (${logoData.byteLength} bytes)`);
+    return cachedLogoImage;
+  } catch (error) {
+    console.warn(`Failed to load logo: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
+};
+
+// Function to draw the logo on a page
+const drawLogo = async (pdfDoc: PDFDocument, page: any, width: number, height: number) => {
+  try {
+    const logoData = await fetchLogo();
+    if (!logoData) {
+      console.warn("Logo data not available, skipping logo display");
+      return;
+    }
+    
+    const logoImage = await pdfDoc.embedPng(logoData);
+    
+    // Calculate dimensions to ensure logo is not too large
+    // Target height of about 70 points (about 1 inch)
+    const targetHeight = 70;
+    const scale = targetHeight / logoImage.height;
+    const scaledWidth = logoImage.width * scale;
+    
+    page.drawImage(logoImage, {
+      x: 50, // Left margin
+      y: height - 40 - targetHeight, // Top margin with some padding
+      width: scaledWidth,
+      height: targetHeight,
+    });
+    
+    console.log("Logo drawn on page");
+  } catch (error) {
+    console.error("Error drawing logo:", error);
+  }
+};
+
+// Improved font loading function with better error handling
+const fetchDevanagariFont = async (useBold = false): Promise<ArrayBuffer> => {
+  // Return cached font if available
+  if (useBold && cachedDevanagariBoldFont) {
+    return cachedDevanagariBoldFont;
+  } else if (!useBold && cachedDevanagariFont) {
+    return cachedDevanagariFont;
+  }
+  
+  const fontConfig = useBold ? FONT_URLS.bold : FONT_URLS.regular;
+  let lastError: Error | null = null;
+  
+  // Try primary font first
+  try {
+    console.log(`Loading ${useBold ? 'Bold' : 'Regular'} font from: ${fontConfig.primary}`);
+    const response = await fetch(fontConfig.primary);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
     }
     
     const fontData = await response.arrayBuffer();
-    console.log(`Devanagari font fetched successfully (${fontData.byteLength} bytes)`);
     
     if (fontData.byteLength < 1000) {
-      throw new Error("Fetched font data seems too small, might be invalid");
+      throw new Error(`Font data too small (${fontData.byteLength} bytes)`);
     }
     
-    cachedDevanagariFont = fontData;
+    console.log(`Font loaded successfully: ${fontConfig.primary} (${fontData.byteLength} bytes)`);
+    
+    // Store in cache
+    if (useBold) {
+      cachedDevanagariBoldFont = fontData;
+    } else {
+      cachedDevanagariFont = fontData;
+    }
+    
     return fontData;
   } catch (error) {
-    console.error("Error fetching Devanagari font:", error);
-    // Try alternative font URL as fallback
-    try {
-      console.log("Trying fallback font URL");
-      const fallbackUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-400-normal.woff';
-      const response = await fetch(fallbackUrl, { cache: 'no-cache' });
-      
-      if (!response.ok) {
-        throw new Error("Fallback font fetch also failed");
-      }
-      
-      const fontData = await response.arrayBuffer();
-      console.log(`Fallback Devanagari font fetched successfully (${fontData.byteLength} bytes)`);
-      cachedDevanagariFont = fontData;
-      return fontData;
-    } catch (fallbackError) {
-      console.error("Fallback font also failed:", fallbackError);
-      throw error; // Throw the original error
+    console.warn(`Failed to load primary font: ${error instanceof Error ? error.message : String(error)}`);
+    lastError = error instanceof Error ? error : new Error(String(error));
+  }
+  
+  // Try fallback font
+  try {
+    const fallbackUrl = fontConfig.fallbacks[0];
+    console.log(`Trying fallback font from: ${fallbackUrl}`);
+    const response = await fetch(fallbackUrl);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
     }
+    
+    const fontData = await response.arrayBuffer();
+    
+    if (fontData.byteLength < 1000) {
+      throw new Error(`Font data too small (${fontData.byteLength} bytes)`);
+    }
+    
+    console.log(`Fallback font loaded successfully: ${fallbackUrl} (${fontData.byteLength} bytes)`);
+    
+    // Store in cache
+    if (useBold) {
+      cachedDevanagariBoldFont = fontData;
+    } else {
+      cachedDevanagariFont = fontData;
+    }
+    
+    return fontData;
+  } catch (error) {
+    console.error(`Failed to load fallback font: ${error instanceof Error ? error.message : String(error)}`);
+    throw lastError || error;
   }
 };
 
@@ -109,12 +220,24 @@ const getProfileProperty = (profile: any, prop: string, fallback: string = "N/A"
   }
 };
 
-// Function to check if a string contains Devanagari characters
+// Stronger check for Devanagari characters
 const containsDevanagari = (text: string): boolean => {
   if (!text) return false;
-  // Devanagari Unicode range: \u0900-\u097F
-  const devanagariPattern = /[\u0900-\u097F]/;
+  // Devanagari Unicode range: \u0900-\u097F plus Gujarati range
+  const devanagariPattern = /[\u0900-\u097F\u0A80-\u0AFF]/;
   return devanagariPattern.test(text);
+};
+
+// Add a new function to help with PDF-safe string conversion
+const sanitizeTextForPDF = (text: string): string => {
+  if (!text) return '';
+  
+  // Replace problematic characters that might cause issues in PDF
+  return text
+    .replace(/"/g, '"')
+    .replace(/'/g, "'")
+    .replace(/—/g, '-')
+    .replace(/–/g, '-');
 };
 
 // Enhanced helper function to draw text with proper alignment and script support
@@ -132,142 +255,108 @@ const drawText = async (
   try {
     if (!text) text = ""; // Ensure text is never undefined
     
+    // Sanitize text to avoid PDF encoding issues
+    text = sanitizeTextForPDF(text);
+    
     const { width } = page.getSize();
     
-    // Determine which font to use
+    // Check if text contains Devanagari characters
     const hasDevanagari = options.forceDevanagari || containsDevanagari(text);
     
     // Use appropriate font - fall back to default if devanagari font is not available
     let font = defaultFont;
+    let actualFontSize = fontSize;
+    
     if (hasDevanagari) {
       if (devanagariFont) {
         font = devanagariFont;
-        console.log(`Using Devanagari font for text: "${text}"`);
+        actualFontSize = fontSize * 1.05; // Slight increase for better clarity
       } else {
         console.warn(`Devanagari text detected but font not available. Text: "${text}"`);
+        return y;
       }
     }
     
-    const textWidth = font.widthOfTextAtSize(text, fontSize);
+    // Handle text positioning
     let actualX = x;
+    let actualY = y;
 
-    if (options.align === 'center') {
-      actualX = x - textWidth / 2;
-    } else if (options.align === 'right') {
-      actualX = x - textWidth;
-    }
-
-    // Handle text wrapping if maxWidth is provided
-    if (options.maxWidth && textWidth > options.maxWidth) {
-      // For Devanagari text, we need different wrapping logic
-      if (hasDevanagari) {
-        // Simple character-by-character wrapping for Devanagari
-        // This is a basic approach - ideally we'd use proper line-breaking for Devanagari
-        let line = '';
-        let actualY = y;
-        let currentWidth = 0;
+    // If maxWidth is provided, handle text wrapping
+    if (options.maxWidth && text.length > 0) {
+      const words = text.split(' ');
+      let line = '';
+      let resultY = y;
+      
+      for (const word of words) {
+        const testLine = line + (line ? ' ' : '') + word;
+        const testWidth = font.widthOfTextAtSize(testLine, actualFontSize);
         
-        for (let i = 0; i < text.length; i++) {
-          const char = text[i];
-          const charWidth = font.widthOfTextAtSize(char, fontSize);
-          
-          if (currentWidth + charWidth > options.maxWidth) {
-            // Draw current line and move to next line
-            page.drawText(line, {
-              x: actualX,
-              y: actualY,
-              font,
-              size: fontSize,
-              color: rgb(color.r, color.g, color.b),
-            });
-            line = char;
-            currentWidth = charWidth;
-            actualY -= fontSize + 2;
-          } else {
-            line += char;
-            currentWidth += charWidth;
+        if (testWidth > options.maxWidth && line) {
+          // Draw current line
+          let lineX = actualX;
+          if (options.align === 'center') {
+            lineX = x - font.widthOfTextAtSize(line, actualFontSize) / 2;
+          } else if (options.align === 'right') {
+            lineX = x - font.widthOfTextAtSize(line, actualFontSize);
           }
-        }
-        
-        // Draw remaining text
-        if (line) {
-          page.drawText(line, {
-            x: actualX,
-            y: actualY,
-            font,
-            size: fontSize,
-            color: rgb(color.r, color.g, color.b),
-          });
-        }
-        
-        return actualY - (fontSize + 2);
-      } else {
-        // For non-Devanagari text, use word-based wrapping
-        const words = text.split(' ');
-        let line = '';
-        let actualY = y;
-        
-        for (const word of words) {
-          const testLine = line + (line ? ' ' : '') + word;
-          const testWidth = font.widthOfTextAtSize(testLine, fontSize);
           
-          if (testWidth > options.maxWidth && line) {
-            page.drawText(line, {
-              x: actualX,
-              y: actualY,
-              font,
-              size: fontSize,
-              color: rgb(color.r, color.g, color.b),
-            });
-            line = word;
-            actualY -= fontSize + 2; // Move to next line
-          } else {
-            line = testLine;
-          }
-        }
-        
-        // Draw remaining text
-        if (line) {
           page.drawText(line, {
-            x: actualX,
-            y: actualY,
-            font,
-            size: fontSize,
-            color: rgb(color.r, color.g, color.b),
+            x: lineX,
+            y: resultY,
+            font: font,
+            size: actualFontSize,
+            color: rgb(color.r, color.g, color.b)
           });
+          
+          line = word;
+          resultY -= actualFontSize * 1.3; // Increase line spacing for better readability
+        } else {
+          line = testLine;
         }
-        
-        return actualY - (fontSize + 2); // Return the new Y position
       }
+      
+      // Draw remaining text
+      if (line) {
+        let lineX = actualX;
+        if (options.align === 'center') {
+          lineX = x - font.widthOfTextAtSize(line, actualFontSize) / 2;
+        } else if (options.align === 'right') {
+          lineX = x - font.widthOfTextAtSize(line, actualFontSize);
+        }
+        
+        page.drawText(line, {
+          x: lineX,
+          y: resultY,
+          font: font,
+          size: actualFontSize,
+          color: rgb(color.r, color.g, color.b)
+        });
+      }
+      
+      return resultY;
     } else {
-      // Just draw the text on a single line
+      // Single line text
+      const textWidth = font.widthOfTextAtSize(text, actualFontSize);
+      
+      if (options.align === 'center') {
+        actualX = x - textWidth / 2;
+      } else if (options.align === 'right') {
+        actualX = x - textWidth;
+      }
+      
       page.drawText(text, {
         x: actualX,
-        y: y,
-        font,
-        size: fontSize,
-        color: rgb(color.r, color.g, color.b),
+        y: actualY,
+        font: font,
+        size: actualFontSize,
+        color: rgb(color.r, color.g, color.b)
       });
+      
       return y;
     }
   } catch (error) {
     console.error("Error in drawText:", error, "for text:", text);
-    
-    // Try to draw the text with default font as a fallback
-    try {
-      console.log(`Fallback: Drawing text with default font: "${text}"`);
-      page.drawText(text, {
-        x: x,
-        y: y,
-        font: defaultFont,
-        size: fontSize,
-        color: rgb(color.r, color.g, color.b),
-      });
-    } catch (fallbackError) {
-      console.error("Even fallback text drawing failed:", fallbackError);
-    }
-    
-    return y; // Return original Y position in case of error
+    return y;
   }
 };
 
@@ -362,6 +451,7 @@ export const exportIntroductionProfilesToPDF = async ({
     // Create a new PDF document
     console.log("Creating PDF document");
     const pdfDoc = await PDFDocument.create();
+    pdfDoc.registerFontkit(fontkit);
     
     // Embed the standard fonts
     console.log("Embedding standard fonts");
@@ -369,14 +459,53 @@ export const exportIntroductionProfilesToPDF = async ({
     const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
     // Fetch and embed the Devanagari font - with better error handling
-    console.log("Fetching and embedding Devanagari font");
+    console.log("Fetching and embedding Devanagari fonts");
     let devanagariFont = null;
+    let devanagariBoldFont = null;
     let fontLoadError = null;
+    
     try {
-      const fontData = await fetchDevanagariFont();
-      console.log("Font data fetched, attempting to embed in PDF");
-      devanagariFont = await pdfDoc.embedFont(fontData);
-      console.log("Devanagari font embedded successfully");
+      // Load regular font with multiple retries
+      let regularFontData;
+      try {
+        console.log("Attempting to load regular Devanagari font");
+        regularFontData = await fetchDevanagariFont(false);
+        console.log("Regular font data fetched successfully:", regularFontData.byteLength, "bytes");
+      } catch (regError) {
+        console.error("Failed to load regular Devanagari font:", regError);
+        throw regError;
+      }
+      
+      // Load bold font with multiple retries
+      let boldFontData;
+      try {
+        console.log("Attempting to load bold Devanagari font");
+        boldFontData = await fetchDevanagariFont(true);
+        console.log("Bold font data fetched successfully:", boldFontData.byteLength, "bytes");
+      } catch (boldError) {
+        console.warn("Failed to load bold Devanagari font, falling back to regular:", boldError);
+        boldFontData = regularFontData; // Use regular as fallback for bold
+      }
+      
+      // Embed the fonts in the PDF
+      console.log("Embedding regular Devanagari font in PDF");
+      try {
+        devanagariFont = await pdfDoc.embedFont(regularFontData);
+        console.log("Regular Devanagari font embedded successfully");
+      } catch (embedError) {
+        console.error("Failed to embed regular Devanagari font:", embedError);
+        toast.error("Error embedding Devanagari font. Marathi text may not display correctly.", { id: toastId, duration: 3000 });
+        throw embedError;
+      }
+      
+      console.log("Embedding bold Devanagari font in PDF");
+      try {
+        devanagariBoldFont = await pdfDoc.embedFont(boldFontData);
+        console.log("Bold Devanagari font embedded successfully");
+      } catch (embedBoldError) {
+        console.warn("Failed to embed bold Devanagari font, using regular font for bold text:", embedBoldError);
+        devanagariBoldFont = devanagariFont; // Use regular as fallback
+      }
       
       // Verify the font was embedded correctly by trying to measure text width
       try {
@@ -391,9 +520,16 @@ export const exportIntroductionProfilesToPDF = async ({
       }
     } catch (fontError) {
       fontLoadError = fontError;
-      console.error("Failed to embed Devanagari font:", fontError);
-      toast.error("Warning: Marathi text may not display correctly", { id: toastId, duration: 3000 });
+      console.error("Critical font loading failure:", fontError);
+      toast.error("Failed to load Devanagari font. Marathi text will not display correctly.", { id: toastId, duration: 5000 });
       // Continue without Devanagari font, we'll use fallback
+    }
+    
+    // Check if we have valid fonts before proceeding
+    if (!devanagariFont) {
+      console.warn("No Devanagari font available, Marathi text will not display correctly");
+    } else {
+      console.log("Devanagari fonts ready for PDF generation");
     }
     
     // Calculate how many pages we need
@@ -413,6 +549,9 @@ export const exportIntroductionProfilesToPDF = async ({
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
       const { width, height } = page.getSize();
       
+      // Draw logo on the page
+      await drawLogo(pdfDoc, page, width, height);
+      
       // Add font loading error message if applicable (only on first page)
       if (fontLoadError && pageIndex === 0) {
         await drawText(
@@ -428,20 +567,20 @@ export const exportIntroductionProfilesToPDF = async ({
         );
       }
       
-      // Title and header
+      // Title and header - centered on page with adjusted vertical position
       await drawText(
         page, 
         title, 
         helveticaBold,
-        devanagariFont,
-        20, 
-        width / 2, 
-        height - margin, 
+        devanagariBoldFont || devanagariFont,
+        24, // Increased size for better prominence
+        width / 2, // Centered on page 
+        height - margin - 15, // Lowered slightly for better spacing from logo
         { r: 0, g: 0, b: 0 }, 
         { align: 'center' }
       );
       
-      // Generation info
+      // Generation info - centered
       await drawText(
         page, 
         `Generated on: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 
@@ -449,21 +588,32 @@ export const exportIntroductionProfilesToPDF = async ({
         devanagariFont,
         10, 
         width / 2, 
-        height - margin - 25, 
+        height - margin - 45, // Adjusted to be below title
         { r: 0.4, g: 0.4, b: 0.4 }, 
         { align: 'center' }
       );
       
-      // Total profiles count (only on first page)
+      // Total profiles count (only on first page) - positioned lower to avoid overlap
       if (pageIndex === 0) {
+        // Light background for profile count
+        drawRect(
+          page,
+          width / 2 - 100, // Center - half width
+          height - margin - 78, // Position for text
+          200, // Width of background
+          24, // Height of background
+          { r: 0.95, g: 0.95, b: 0.95 }, // Light gray background
+          true // Fill
+        );
+        
         await drawText(
           page, 
           `Total Profiles: ${filteredProfiles.length}`, 
           helveticaBold,
-          devanagariFont,
-          12, 
+          devanagariBoldFont || devanagariFont,
+          16, // Increased size for more prominence
           width / 2, 
-          height - margin - 45, 
+          height - margin - 70, // Moved down to avoid overlap with generation date
           { r: 0, g: 0, b: 0 }, 
           { align: 'center' }
         );
@@ -476,8 +626,15 @@ export const exportIntroductionProfilesToPDF = async ({
       
       console.log(`Page ${pageIndex + 1} contains ${pageProfiles.length} profiles`);
       
-      // Calculate starting Y position (after the header)
-      let yPos = height - margin - 80;
+      // Calculate starting Y position (after the header) - reduced gap
+      let yPos;
+      if (pageIndex === 0) {
+        // First page has the Total Profiles count
+        yPos = height - margin - 95; 
+      } else {
+        // Subsequent pages don't have the Total Profiles count, so we can start higher
+        yPos = height - margin - 75;
+      }
       
       // Draw each profile card (max 2 per page)
       for (let i = 0; i < pageProfiles.length; i++) {
@@ -485,7 +642,7 @@ export const exportIntroductionProfilesToPDF = async ({
         const profile = pageProfiles[i];
         
         // First, draw the card outline
-        const cardHeight = 320; // Fixed card height for 2 profiles per page
+        const cardHeight = 310; // Slightly reduced card height for better spacing
         const cardStartY = yPos;
         const cardEndY = yPos - cardHeight;
         
@@ -516,7 +673,7 @@ export const exportIntroductionProfilesToPDF = async ({
           page, 
           displayName, 
           helveticaBold,
-          devanagariFont,
+          devanagariBoldFont || devanagariFont,
           16, 
           margin + 20, 
           nameY, 
@@ -551,7 +708,7 @@ export const exportIntroductionProfilesToPDF = async ({
           page, 
           genderText, 
           helveticaBold,
-          devanagariFont,
+          devanagariBoldFont || devanagariFont,
           12, 
           width - margin - 25, 
           nameY, 
@@ -582,7 +739,7 @@ export const exportIntroductionProfilesToPDF = async ({
             page, 
             detail.label, 
             helveticaBold,
-            devanagariFont,
+            devanagariBoldFont || devanagariFont,
             12, 
             labelX, 
             detailsY, 
@@ -624,33 +781,40 @@ export const exportIntroductionProfilesToPDF = async ({
         
         let addressToShow = permanentAddress || currentAddress || "N/A";
         
-        // 9. Address (special handling for long text)
+        // Process address with better formatting
+        addressToShow = addressToShow.replace(/,\s*/g, ', ').trim(); // Normalize commas
+        addressToShow = addressToShow.replace(/\s+/g, ' '); // Remove extra spaces
+        
+        // Draw the address label first
         await drawText(
-          page, 
-          "9. Address:", 
+          page,
+          "9. Address:",
           helveticaBold,
-          devanagariFont,
-          12, 
-          labelX, 
-          detailsY, 
+          devanagariBoldFont || devanagariFont,
+          12,
+          labelX,
+          detailsY,
           { r: 0.3, g: 0.3, b: 0.3 }
         );
         
-        // Draw address with wrapping
+        // Draw address with proper wrapping and spacing
         const addressY = await drawText(
-          page, 
-          addressToShow, 
+          page,
+          addressToShow,
           helveticaFont,
           devanagariFont,
-          12, 
-          valueX, 
-          detailsY, 
-          { r: 0, g: 0, b: 0 }, 
-          { 
-            maxWidth: width - valueX - margin - 20,
+          11,
+          valueX,
+          detailsY,
+          { r: 0, g: 0, b: 0 },
+          {
+            maxWidth: width - valueX - margin - 40,
             forceDevanagari: containsDevanagari(addressToShow)
           }
         );
+        
+        // Adjust the spacing after address
+        detailsY = Math.min(addressY - lineHeight, detailsY - lineHeight * 2);
         
         // 10. Anubandh ID (at the bottom)
         detailsY = addressY - lineHeight;
@@ -658,7 +822,7 @@ export const exportIntroductionProfilesToPDF = async ({
           page, 
           "10. Anubandh ID:", 
           helveticaBold,
-          devanagariFont,
+          devanagariBoldFont || devanagariFont,
           12, 
           labelX, 
           detailsY, 
@@ -677,7 +841,7 @@ export const exportIntroductionProfilesToPDF = async ({
         );
         
         // Move to next card position
-        yPos -= cardHeight + 30; // Add some space between cards
+        yPos -= cardHeight + 20; // Reduced space between cards from 30 to 20
       }
       
       // Add page numbers at the bottom
@@ -779,6 +943,7 @@ export const exportProfilesToPDF = async ({
     // Create a new PDF document
     console.log("Creating PDF document");
     const pdfDoc = await PDFDocument.create();
+    pdfDoc.registerFontkit(fontkit);
     
     // Embed the standard fonts
     console.log("Embedding standard fonts");
@@ -823,20 +988,23 @@ export const exportProfilesToPDF = async ({
     let page = pdfDoc.addPage([pageWidth, pageHeight]);
     const { width, height } = page.getSize();
     
-    // Title and header
+    // Draw logo on the page
+    await drawLogo(pdfDoc, page, width, height);
+    
+    // Title and header - centered on page with adjusted vertical position
     await drawText(
       page, 
       title, 
       helveticaBold,
       devanagariFont,
-      18, 
-      width / 2, 
-      height - margin, 
+      24, // Increased to match introduction profiles
+      width / 2, // Centered on page 
+      height - margin - 15, // Lowered slightly for better spacing from logo
       { r: 0, g: 0, b: 0 }, 
       { align: 'center' }
     );
     
-    // Generation info
+    // Generation info - centered
     await drawText(
       page, 
       `Generated on: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 
@@ -844,7 +1012,7 @@ export const exportProfilesToPDF = async ({
       devanagariFont,
       10, 
       width / 2, 
-      height - margin - 25, 
+      height - margin - 45, // Adjusted to be below title
       { r: 0.4, g: 0.4, b: 0.4 }, 
       { align: 'center' }
     );
@@ -943,6 +1111,9 @@ export const exportProfilesToPDF = async ({
         // Add a new page
         page = pdfDoc.addPage([pageWidth, pageHeight]);
         
+        // Draw logo on the new page
+        await drawLogo(pdfDoc, page, width, height);
+        
         // Reset position
         yPos = height - margin - 30;
         
@@ -994,6 +1165,9 @@ export const exportProfilesToPDF = async ({
         
         // Add a new page for each profile
         let detailPage = pdfDoc.addPage([pageWidth, pageHeight]);
+        
+        // Draw logo on the detail page
+        await drawLogo(pdfDoc, detailPage, width, height);
         
         // Profile title
         const name = getProfileProperty(profile, 'name');
@@ -1154,6 +1328,8 @@ export const exportProfilesToPDF = async ({
           if (detailsY < margin + 50) {
             // Add a new page if we're running out of space
             detailPage = pdfDoc.addPage([pageWidth, pageHeight]);
+            // Draw logo on the new detail page
+            await drawLogo(pdfDoc, detailPage, width, height);
             detailsY = height - margin - 50;
           }
         }

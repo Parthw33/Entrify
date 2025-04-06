@@ -18,7 +18,7 @@ import {
   UserX,
 } from "lucide-react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -139,21 +139,38 @@ export default function Home() {
 
               {/* CTA Buttons */}
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-                <Link href="/dashboard">
-                  <Button size="lg" className="gap-2 h-12 px-6">
-                    Get Started (QR कोड Scan)
+                {/* Only show buttons for authenticated users with non-default role */}
+                {session &&
+                session.user &&
+                session.user.role &&
+                session.user.role !== "default" ? (
+                  <>
+                    <Link href="/dashboard">
+                      <Button size="lg" className="gap-2 h-12 px-6">
+                        Get Started (QR कोड Scan)
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Link href="/register">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="gap-2 h-12 px-6 border-2"
+                      >
+                        New Registration (नोंदणी करा)
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => signIn("google", { callbackUrl: "/" })}
+                    size="lg"
+                    className="gap-2 h-12 px-6"
+                  >
+                    Sign In to Access
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                </Link>
-                <Link href="/register">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="gap-2 h-12 px-6 border-2"
-                  >
-                    New Registration (नोंदणी करा)
-                  </Button>
-                </Link>
+                )}
               </div>
 
               {/* Stats Section */}
@@ -331,11 +348,16 @@ export default function Home() {
             {features.map((feature, index) => (
               <Link
                 href={
-                  feature.title === "QR कोड स्कॅनिंग"
-                    ? "/dashboard"
-                    : feature.title === "नोंदणी प्रक्रिया"
-                    ? "/register"
-                    : "#"
+                  session &&
+                  session.user &&
+                  session.user.role &&
+                  session.user.role !== "default"
+                    ? feature.title === "QR कोड स्कॅनिंग"
+                      ? "/dashboard"
+                      : feature.title === "नोंदणी प्रक्रिया"
+                      ? "/register"
+                      : "#"
+                    : "/auth/signin"
                 }
                 key={index}
                 className="block hover:no-underline"
@@ -351,6 +373,14 @@ export default function Home() {
                     <CardDescription className="text-base">
                       {feature.description}
                     </CardDescription>
+                    {!session ||
+                    !session.user ||
+                    !session.user.role ||
+                    session.user.role === "default" ? (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Sign in required to access
+                      </p>
+                    ) : null}
                   </CardContent>
                 </Card>
               </Link>
@@ -370,11 +400,22 @@ export default function Home() {
             भविष्यातील जोडीदारास भेटण्याची संधी मिळवा.
           </p>
           <div className="mt-8">
-            <Link href="/register">
-              <Button size="lg" className="gap-2 h-12 px-8">
-                आता नोंदणी करा
-              </Button>
-            </Link>
+            {session &&
+            session.user &&
+            session.user.role &&
+            session.user.role !== "default" ? (
+              <Link href="/register">
+                <Button size="lg" className="gap-2 h-12 px-8">
+                  आता नोंदणी करा
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/auth/signin">
+                <Button size="lg" className="gap-2 h-12 px-8">
+                  Sign In to Register
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </section>

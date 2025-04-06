@@ -18,7 +18,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getIntroductionProfiles } from "@/app/actions/getIntroductionProfiles";
 import { Profile1 } from "@/app/admin/components/approvedProfileRow";
 import {
-  Heart,
   Download,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +28,7 @@ import {
   Phone,
   Mail,
   MapPin,
+  View,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parse, isValid } from "date-fns";
@@ -75,7 +75,11 @@ export default function IntroductionView() {
       return;
     }
 
-    if (status === "authenticated" && session?.user?.role === "default") {
+    if (
+      (status === "authenticated" && session?.user?.role === "default") ||
+      session?.user?.role === "readOnly" ||
+      session?.user?.role === "user"
+    ) {
       toast.error("You don't have permission to access this page.");
       router.push("/");
     }
@@ -196,7 +200,7 @@ export default function IntroductionView() {
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                  <Heart size={20} />
+                  <View size={20} />
                   Introduction Profiles
                 </CardTitle>
                 <CardDescription>

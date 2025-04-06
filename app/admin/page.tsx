@@ -8,6 +8,9 @@ import StatCards from "./components/statCards";
 import ApprovedUsersDialog from "./components/approvedUsersDialog";
 import CsvUploader from "./components/csvUploader";
 import UsersTableWithSkeleton from "./components/usersTableWithSkeleton";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Mail } from "lucide-react";
 
 export default function Admin() {
   const { data: session, status } = useSession();
@@ -40,6 +43,18 @@ export default function Admin() {
     <div className="container mx-auto py-10 space-y-6">
       {/* Analytics Dashboard */}
       <StatCards onApprovedClick={handleApprovedCardClick} />
+
+      {/* Admin Actions */}
+      {isAdmin && (
+        <div className="flex flex-wrap px-3 gap-4 mb-6 ">
+          <Link href="/admin/bulkemail">
+            <Button className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Bulk Email Sender
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Approved Users Dialog */}
       <ApprovedUsersDialog

@@ -40,26 +40,29 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"; // Assuming you have a Dialog component.
-import { Profile1 } from "./approvedProfileRow";
-import { approveUser } from "@/app/actions/approveUser";
-import { updateApprovalStatus } from "@/app/actions/updateApprovalStatus";
+} from "@/components/ui/dialog";
+import { PandharpurProfileData } from "@/app/actions/getPandharpurProfiles";
+import { updatePandharpurProfileStatus } from "@/app/actions/updatePandharpurProfileStatus";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
 
-interface UserTableProps {
-  users: Profile1[];
+interface PandharpurTableProps {
+  profiles: PandharpurProfileData[];
   refetchData: () => Promise<void>;
 }
 
-const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
+const PandharpurTable: React.FC<PandharpurTableProps> = ({
+  profiles,
+  refetchData,
+}) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<Profile1 | null>(null);
+  const [selectedProfile, setSelectedProfile] =
+    useState<PandharpurProfileData | null>(null);
   const [approvalFilter, setApprovalFilter] = useState<string>("All");
   const [genderFilter, setGenderFilter] = useState<string>("All");
   const [dialogBox, setDialogBox] = useState(false);
@@ -68,56 +71,57 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
   const isUser = session?.user?.role === "user";
-  const isReadOnly = session?.user?.role === "readOnly";
-  const isDefault = session?.user?.role === "default";
   const canApprove = isAdmin || isUser;
 
-  // Filter users based on search query, approval status, and gender
-  const filteredUsers = users.filter((user) => {
+  // Filter profiles based on search query, approval status, and gender
+  const filteredProfiles = profiles.filter((profile) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.anubandhId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.mobileNumber.includes(searchQuery);
+      profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      profile.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      profile.anubandhId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      profile.mobileNumber.includes(searchQuery);
 
     const matchesApprovalStatus =
       approvalFilter === "All" ||
-      (approvalFilter === "Approved" && user.approvalStatus) ||
-      (approvalFilter === "Pending" && !user.approvalStatus);
+      (approvalFilter === "Approved" && profile.approvalStatus) ||
+      (approvalFilter === "Pending" && !profile.approvalStatus);
 
     const matchesGender =
       genderFilter === "All" ||
-      (genderFilter === "Male" && user.gender === "MALE") ||
-      (genderFilter === "Female" && user.gender === "FEMALE");
+      (genderFilter === "Male" && profile.gender === "MALE") ||
+      (genderFilter === "Female" && profile.gender === "FEMALE");
 
     return matchesSearch && matchesApprovalStatus && matchesGender;
   });
 
   // Pagination
-  const indexOfLastUser = currentPage * rowsPerPage;
-  const indexOfFirstUser = indexOfLastUser - rowsPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
+  const indexOfLastProfile = currentPage * rowsPerPage;
+  const indexOfFirstProfile = indexOfLastProfile - rowsPerPage;
+  const currentProfiles = filteredProfiles.slice(
+    indexOfFirstProfile,
+    indexOfLastProfile
+  );
+  const totalPages = Math.ceil(filteredProfiles.length / rowsPerPage);
 
-  const handleUserClick = (user: Profile1) => {
-    setSelectedUser(user);
-    setIntroductionChecked(user.introductionStatus || false);
+  const handleProfileClick = (profile: PandharpurProfileData) => {
+    setSelectedProfile(profile);
+    setIntroductionChecked(profile.introductionStatus || false);
     setDialogBox(true);
   };
 
   const handleApproveProfile = async () => {
-    if (!selectedUser) return;
+    if (!selectedProfile) return;
     setIsSubmitting(true);
 
     try {
-      await updateApprovalStatus({
-        anubandhId: selectedUser.anubandhId,
-        attendeeCount: selectedUser.attendeeCount,
+      await updatePandharpurProfileStatus({
+        anubandhId: selectedProfile.anubandhId,
+        attendeeCount: selectedProfile.attendeeCount,
         introductionStatus: introductionChecked,
       });
 
-      setSelectedUser({
-        ...selectedUser,
+      setSelectedProfile({
+        ...selectedProfile,
         approvalStatus: true,
         introductionStatus: introductionChecked,
       });
@@ -141,10 +145,10 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
   };
 
   const handleUpdateIntroductionStatus = async () => {
-    if (!selectedUser) return;
+    if (!selectedProfile) return;
 
     // Only allow updates for approved profiles
-    if (!selectedUser.approvalStatus) {
+    if (!selectedProfile.approvalStatus) {
       toast.error(
         "Profile must be approved before setting introduction status"
       );
@@ -154,14 +158,14 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
     setIsSubmitting(true);
 
     try {
-      await updateApprovalStatus({
-        anubandhId: selectedUser.anubandhId,
+      await updatePandharpurProfileStatus({
+        anubandhId: selectedProfile.anubandhId,
         introductionStatus: introductionChecked,
-        attendeeCount: selectedUser.attendeeCount,
+        attendeeCount: selectedProfile.attendeeCount,
       });
 
-      setSelectedUser({
-        ...selectedUser,
+      setSelectedProfile({
+        ...selectedProfile,
         introductionStatus: introductionChecked,
       });
 
@@ -190,18 +194,27 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
     }
   };
 
+  // Helper function to format date
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy");
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   return (
     <Card className="mt-6 border shadow-sm">
       <CardHeader className="bg-slate-50 border-b flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Registered Users</CardTitle>
+            <CardTitle>Pandharpur Registered Profiles</CardTitle>
             <CardDescription>
-              Complete list of all registered user profiles
+              Complete list of all registered Pandharpur profiles
             </CardDescription>
           </div>
           <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            {filteredUsers.length} Users Found
+            {filteredProfiles.length} Profiles Found
           </Badge>
         </div>
         <div className="flex flex-wrap items-center gap-4">
@@ -281,35 +294,35 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentUsers.length === 0 ? (
+              {currentProfiles.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
                     className="text-center py-8 text-muted-foreground"
                   >
-                    No users found
+                    No profiles found
                   </TableCell>
                 </TableRow>
               ) : (
-                currentUsers.map((user) => (
+                currentProfiles.map((profile) => (
                   <TableRow
-                    key={user.id}
+                    key={profile.id}
                     className="hover:bg-slate-50 cursor-pointer"
-                    onClick={() => handleUserClick(user)} // Handle user click to open modal
+                    onClick={() => handleProfileClick(profile)}
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8 bg-slate-200">
                           <AvatarFallback>
-                            {user.photo ? (
+                            {profile.photo ? (
                               <Image
-                                src={user.photo}
+                                src={profile.photo}
                                 width={50}
                                 height={50}
                                 alt="Profile"
                               />
                             ) : (
-                              user.name
+                              profile.name
                                 .split(" ")
                                 .map((part) => part[0])
                                 .join("")
@@ -319,38 +332,38 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
                         </Avatar>
                       </div>
                     </TableCell>
-                    <TableCell>{user.anubandhId}</TableCell>
+                    <TableCell>{profile.anubandhId}</TableCell>
                     <TableCell>
-                      <span>{user.name}</span>
+                      <span>{profile.name}</span>
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
                         className={
-                          user.gender === "MALE"
+                          profile.gender === "MALE"
                             ? "bg-blue-50 text-blue-700"
                             : "bg-pink-50 text-pink-700"
                         }
                       >
-                        {user.gender === "MALE"
+                        {profile.gender === "MALE"
                           ? "Male"
-                          : user.gender === "FEMALE"
+                          : profile.gender === "FEMALE"
                           ? "Female"
                           : "N/A"}
                       </Badge>
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.mobileNumber}</TableCell>
+                    <TableCell>{profile.email}</TableCell>
+                    <TableCell>{profile.mobileNumber}</TableCell>
                     <TableCell>
                       <Badge
-                        variant={user.approvalStatus ? "default" : "outline"}
+                        variant={profile.approvalStatus ? "default" : "outline"}
                         className={
-                          user.approvalStatus
+                          profile.approvalStatus
                             ? "bg-green-50 text-green-700"
                             : "bg-red-50 text-red-700"
                         }
                       >
-                        {user.approvalStatus ? (
+                        {profile.approvalStatus ? (
                           <>
                             <Check className="h-3.5 w-3.5" /> Approved
                           </>
@@ -368,10 +381,10 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
           </Table>
         </div>
 
-        {/* Pagination Controls - Made responsive */}
-        <div className="flex flex-col sm:flex-row items-center justify-between py-4 px-4 border-t gap-4">
-          <div className="flex items-center gap-2 order-2 sm:order-1">
-            <p className="text-sm whitespace-nowrap">Rows per page</p>
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between py-4 px-4 border-t">
+          <div className="flex items-center gap-2">
+            <p className="text-sm">Rows per page</p>
             <Select
               value={rowsPerPage.toString()}
               onValueChange={(value) => {
@@ -389,26 +402,21 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
               </SelectContent>
             </Select>
           </div>
-
-          <Pagination className="order-1 sm:order-2">
+          <Pagination>
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  className="h-8 min-w-8 px-2"
                 />
               </PaginationItem>
               <PaginationItem>
-                <span className="text-sm whitespace-nowrap">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
+                Page {currentPage} of {totalPages || 1}
               </PaginationItem>
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
-                    setCurrentPage(Math.min(totalPages || 1, currentPage + 1))
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
                   }
-                  className="h-8 min-w-8 px-2"
                 />
               </PaginationItem>
             </PaginationContent>
@@ -417,64 +425,73 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
       </CardContent>
 
       {/* Dialog Box */}
-      {selectedUser && (
+      {selectedProfile && (
         <Dialog open={dialogBox} onOpenChange={setDialogBox}>
           <DialogTrigger />
           <DialogContent>
             <div
               className={`max-w-md mx-auto px-6 py-2 rounded-sm shadow-md ${
-                selectedUser.gender === "MALE"
+                selectedProfile.gender === "MALE"
                   ? "bg-[#00FFFF] text-black"
-                  : selectedUser.gender === "FEMALE"
+                  : selectedProfile.gender === "FEMALE"
                   ? "bg-pink-300 text-black"
                   : ""
               }`}
             >
-              <DialogTitle>{selectedUser.name}</DialogTitle>
+              <DialogTitle>{selectedProfile.name}</DialogTitle>
             </div>
             <DialogDescription>
               <div className="space-y-4 text-black">
                 <p>
-                  <strong>Anubandh ID:</strong> {selectedUser.anubandhId}
+                  <strong>Anubandh ID:</strong> {selectedProfile.anubandhId}
                 </p>
                 <p>
                   <strong>Gender:</strong>{" "}
-                  {selectedUser.gender === "MALE"
+                  {selectedProfile.gender === "MALE"
                     ? "Male"
-                    : selectedUser.gender === "FEMALE"
+                    : selectedProfile.gender === "FEMALE"
                     ? "Female"
                     : "N/A"}
                 </p>
                 <p>
-                  <strong>Email:</strong> {selectedUser.email}
+                  <strong>Email:</strong> {selectedProfile.email}
                 </p>
                 <p>
-                  <strong>Mobile Number:</strong> {selectedUser.mobileNumber}
+                  <strong>Mobile Number:</strong> {selectedProfile.mobileNumber}
                 </p>
                 <p>
                   <strong>Date of Birth:</strong>{" "}
-                  {selectedUser.dateOfBirth
-                    ? new Date(selectedUser.dateOfBirth).toLocaleDateString(
-                        "en-GB"
-                      )
-                    : "N/A"}
+                  {formatDate(selectedProfile.dateOfBirth)}
                 </p>
                 <p>
-                  <strong>Birth Time:</strong> {selectedUser.birthTime}
+                  <strong>Birth Time:</strong> {selectedProfile.birthTime}
                 </p>
                 <p>
-                  <strong>Birth Place:</strong> {selectedUser.birthPlace}
+                  <strong>Birth Place:</strong> {selectedProfile.birthPlace}
                 </p>
                 <p>
-                  <strong>Education:</strong> {selectedUser.education}
+                  <strong>Education:</strong> {selectedProfile.education}
+                </p>
+                <p>
+                  <strong>Height:</strong> {selectedProfile.height}
+                </p>
+                <p>
+                  <strong>First Gotra:</strong> {selectedProfile.firstGotra}
+                </p>
+                <p>
+                  <strong>Second Gotra:</strong> {selectedProfile.secondGotra}
+                </p>
+                <p>
+                  <strong>Annual Income:</strong> {selectedProfile.annualIncome}
                 </p>
                 <p>
                   <strong>Address:</strong>{" "}
-                  {selectedUser.permanentAddress || selectedUser.currentAddress}
+                  {selectedProfile.permanentAddress ||
+                    selectedProfile.currentAddress}
                 </p>
                 <p>
                   <div className="text-lg font-bold">
-                    Guest Count: {selectedUser.attendeeCount}
+                    Guest Count: {selectedProfile.attendeeCount}
                   </div>
                 </p>
 
@@ -482,10 +499,10 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
                     or when profile is not approved (in which case it will be used when approving) */}
                 {canApprove && (
                   <div className="flex items-center space-x-2">
-                    {!selectedUser.introductionStatus ? (
+                    {!selectedProfile.introductionStatus ? (
                       <>
                         <Checkbox
-                          id={`introductionStatus-${selectedUser.id}`}
+                          id={`introductionStatus-${selectedProfile.id}`}
                           checked={introductionChecked}
                           onCheckedChange={(checked) =>
                             setIntroductionChecked(checked === true)
@@ -493,7 +510,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
                           disabled={isSubmitting}
                         />
                         <Label
-                          htmlFor={`introductionStatus-${selectedUser.id}`}
+                          htmlFor={`introductionStatus-${selectedProfile.id}`}
                           className="text-sm font-medium cursor-pointer"
                         >
                           Interested for Introduction
@@ -506,7 +523,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
                 )}
 
                 {/* Show explanation if not approved but checkbox is checked */}
-                {!selectedUser.approvalStatus &&
+                {!selectedProfile.approvalStatus &&
                   introductionChecked &&
                   canApprove && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -516,8 +533,8 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
                   )}
 
                 {/* If already approved and has introduction status, show it as text */}
-                {selectedUser.approvalStatus &&
-                  selectedUser.introductionStatus && (
+                {selectedProfile.approvalStatus &&
+                  selectedProfile.introductionStatus && (
                     <div className="text-lg font-bold text-green-600 flex items-center gap-2 mt-2">
                       <CheckCircle className="h-5 w-5" />
                       Interested for Introduction
@@ -526,7 +543,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
               </div>
             </DialogDescription>
             <DialogFooter className="flex justify-end pt-4 space-x-2">
-              {!selectedUser.approvalStatus && canApprove && (
+              {!selectedProfile.approvalStatus && canApprove && (
                 <button
                   onClick={handleApproveProfile}
                   disabled={isSubmitting}
@@ -538,8 +555,8 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
               )}
 
               {/* Update Introduction Status button - shown ONLY when profile is already approved but introductionStatus is false */}
-              {selectedUser.approvalStatus &&
-                !selectedUser.introductionStatus &&
+              {selectedProfile.approvalStatus &&
+                !selectedProfile.introductionStatus &&
                 canApprove && (
                   <button
                     onClick={handleUpdateIntroductionStatus}
@@ -558,4 +575,4 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
   );
 };
 
-export default UserTable;
+export default PandharpurTable;

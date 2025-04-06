@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   ShieldAlert,
   Clock,
-  Heart,
   Users,
   UserCog,
   LogOut,
@@ -38,6 +37,9 @@ export function Nav() {
   // Get user role from session
   const userRole = session?.data?.user?.role || "default";
   const isDefaultRole = userRole === "default";
+  const isReadOnlyRole = userRole === "readOnly";
+  const isUserRole = userRole === "user";
+  const isAdminRole = userRole === "admin";
 
   // Special case for registerPandharpur route
   const isPandharpurRegisterPage = pathname === "/registerPandharpur";
@@ -93,16 +95,36 @@ export function Nav() {
                 },
               ]
             : []),
-          {
-            name: "New Registrations",
-            href: "/newlyRegistered",
-            icon: <Clock size={18} />,
-          },
-          {
-            name: "Introduction View",
-            href: "/introductionView",
-            icon: <View size={18} />,
-          },
+          // Show both New Registrations and Introduction View for admin only
+          ...(isAdminRole
+            ? [
+                {
+                  name: "New Registrations",
+                  href: "/newlyRegistered",
+                  icon: <Clock size={18} />,
+                },
+                {
+                  name: "Introduction View",
+                  href: "/introductionView",
+                  icon: <View size={18} />,
+                },
+                {
+                  name: "Pandharpur Registeration",
+                  href: "/admin/pandharpur-profiles",
+                  icon: <View size={18} />,
+                },
+              ]
+            : []),
+          // Show only New Registrations for user role
+          ...(isUserRole
+            ? [
+                {
+                  name: "New Registrations",
+                  href: "/newlyRegistered",
+                  icon: <Clock size={18} />,
+                },
+              ]
+            : []),
         ]),
   ];
 

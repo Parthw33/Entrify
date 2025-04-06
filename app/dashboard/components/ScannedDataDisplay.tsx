@@ -273,7 +273,7 @@ export default function ScannedDataDisplay({
 
   if (!profileData) {
     return (
-      <Card className="mt-6 border-slate-200">
+      <Card className="mt-6 border-slate-200 shadow-md">
         <CardContent className="p-6 flex justify-center items-center">
           <p className="text-black">
             {searchError || "Loading profile data..."}
@@ -289,10 +289,7 @@ export default function ScannedDataDisplay({
         <CardHeader className="bg-slate-50 border-b p-4 pb-3">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-xl">{profileData.name} </CardTitle>
-              <CardDescription>
-                {profileData.mobileNumber} - {profileData.anubandhId}
-              </CardDescription>
+              <CardTitle className="text-lg">Profile Details</CardTitle>
             </div>
             <Badge
               variant={profileData.approvalStatus ? "secondary" : "outline"}
@@ -338,6 +335,11 @@ export default function ScannedDataDisplay({
               </div>
 
               <div>
+                <p className="text-sm text-muted-foreground">Anubandh ID:</p>
+                <p className="font-medium">{profileData.anubandhId}</p>
+              </div>
+
+              <div>
                 <p className="text-sm text-muted-foreground">Email</p>
                 <p className="font-medium break-words">{profileData.email}</p>
               </div>
@@ -365,6 +367,13 @@ export default function ScannedDataDisplay({
                 </div>
               )}
 
+              {profileData.birthPlace && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Birth Place</p>
+                  <p className="font-medium">{profileData.birthPlace}</p>
+                </div>
+              )}
+
               {profileData.education && (
                 <div className="sm:col-span-2">
                   <p className="text-sm text-muted-foreground">Education</p>
@@ -372,7 +381,7 @@ export default function ScannedDataDisplay({
                 </div>
               )}
 
-              {/* Guest Count section - Only editable for female profiles */}
+              {/* Guest Count section */}
               <div className="sm:col-span-2 mt-2">
                 <p className="text-sm text-muted-foreground mb-2">
                   Guest Count (Including Self)
@@ -438,7 +447,6 @@ export default function ScannedDataDisplay({
 
               {/* Introduction Status */}
               <div className="sm:col-span-2 mt-2">
-                {/* If already approved and has introduction status, show it as text */}
                 {profileData.approvalStatus &&
                   profileData.introductionStatus && (
                     <div>
@@ -452,7 +460,6 @@ export default function ScannedDataDisplay({
                     </div>
                   )}
 
-                {/* For profiles that are either not approved, or approved but without introduction status */}
                 {canApprove &&
                   (!profileData.approvalStatus ||
                     (profileData.approvalStatus &&
@@ -476,6 +483,12 @@ export default function ScannedDataDisplay({
                           Interested for Introduction
                         </Label>
                       </div>
+                      {!profileData.approvalStatus && (
+                        <p className="text-gray-600 text-sm mt-2">
+                          Introduction status will be saved when the entry is
+                          approved
+                        </p>
+                      )}
                     </div>
                   )}
               </div>
@@ -493,8 +506,8 @@ export default function ScannedDataDisplay({
         <CardFooter className="flex justify-between space-x-3 p-4 sm:p-6 border-t">
           {!isReadOnly && (
             <Button onClick={onReset} variant="outline" className="h-10 gap-2">
-              <RefreshCw className="h-4 w-4" />
-              <span>Reset</span>
+              <ArrowLeft className="h-4 w-4" />
+              <span>Scan New</span>
             </Button>
           )}
 
@@ -504,7 +517,7 @@ export default function ScannedDataDisplay({
               <Button
                 onClick={handleApproveProfile}
                 disabled={isSubmitting}
-                className="gap-2 bg-green-600 hover:bg-green-700 text-sm h-10 px-5"
+                className="gap-2 bg-green-600 hover:bg-green-700 text-sm h-12 px-5"
               >
                 {isSubmitting ? (
                   <>
@@ -527,7 +540,7 @@ export default function ScannedDataDisplay({
                 <Button
                   onClick={handleUpdateIntroduction}
                   disabled={isSubmitting}
-                  className="gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-10 px-5"
+                  className="gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-12 px-5"
                 >
                   {isSubmitting ? (
                     <>
@@ -537,7 +550,7 @@ export default function ScannedDataDisplay({
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4" />
-                      Set Introduction
+                      Set Introduction Status
                     </>
                   )}
                 </Button>

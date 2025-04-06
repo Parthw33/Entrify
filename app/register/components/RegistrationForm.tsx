@@ -1,4 +1,3 @@
-// components/RegistrationForm.tsx
 "use client";
 
 import React, { useState, useRef, ChangeEvent, FormEvent } from "react";
@@ -41,7 +40,6 @@ import {
   Plus,
   Minus,
 } from "lucide-react";
-import { sendEmail } from "@/app/actions/sendEmail";
 import { Slider } from "@/components/ui/slider";
 
 const registrationSchema = z.object({
