@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     siteName: "स्नेहबंध पंढरपूर २०२५",
     images: [
       {
-        url: "https://res.cloudinary.com/ddrxbg3h9/image/upload/v1741503397/Sneh_melava_brpsgc.png",
+        url: "https://res.cloudinary.com/ddrxbg3h9/image/upload/v1744048022/data_elegance_logo_f9byyc.png",
         width: 1000,
         height: 400,
         alt: "स्नेहबंध मेळावा",
@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     description:
       "आर्य वैश्य कोमटी समाज, पंढरपूर संचलित स्नेहबंध २०२५ - स्व. सुरेश (आबा) कौलवार यांच्या स्मरणार्थ",
     images: [
-      "https://res.cloudinary.com/ddrxbg3h9/image/upload/v1741503397/Sneh_melava_brpsgc.png",
+      "https://res.cloudinary.com/ddrxbg3h9/image/upload/v1744048022/data_elegance_logo_f9byyc.png",
     ],
   },
   robots: {
@@ -97,12 +97,15 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [{ url: "/favicon.ico" }, { url: "/icon.png", type: "image/png" }],
-    apple: [{ url: "/apple-icon.png" }],
+    icon: [
+      { url: "/favicon/favicon.png" },
+      { url: "/favicon/favicon.png", type: "image/png" },
+    ],
+    apple: [{ url: "/favicon/favicon.png" }],
     other: [
       {
         rel: "apple-touch-icon-precomposed",
-        url: "/apple-touch-icon-precomposed.png",
+        url: "/favicon/favicon.png",
       },
     ],
   },
@@ -123,7 +126,7 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
         />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon/favicon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -133,23 +136,23 @@ export default function RootLayout({
         <meta name="application-name" content="स्नेहबंध" />
         <meta name="msapplication-TileColor" content="#000000" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/favicon/favicon.png" />
         <link
           rel="apple-touch-icon"
           sizes="152x152"
-          href="/icons/icon-152x152.png"
+          href="/favicon/favicon.png"
         />
         <link
           rel="apple-touch-icon"
           sizes="180x180"
-          href="/icons/icon-192x192.png"
+          href="/favicon/favicon.png"
         />
         <link
           rel="apple-touch-icon"
           sizes="167x167"
-          href="/icons/icon-192x192.png"
+          href="/favicon/favicon.png"
         />
-        <link rel="mask-icon" href="/icons/icon-192x192.png" color="#000000" />
+        <link rel="mask-icon" href="/favicon/favicon.png" color="#000000" />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`}>
         <SpeedInsights />

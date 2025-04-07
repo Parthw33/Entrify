@@ -31,7 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Check, CheckCircle, X, User, Users } from "lucide-react";
+import { Check, CheckCircle, X, User, Users, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import {
   Dialog,
@@ -204,20 +204,22 @@ const PandharpurTable: React.FC<PandharpurTableProps> = ({
   };
 
   return (
-    <Card className="mt-6 border shadow-sm">
-      <CardHeader className="bg-slate-50 border-b flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+    <Card className="mt-4 sm:mt-6 border shadow-sm">
+      <CardHeader className="bg-slate-50 border-b flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <CardTitle>Pandharpur Registered Profiles</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base sm:text-lg md:text-xl">
+              Pandharpur Registered Profiles
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Complete list of all registered Pandharpur profiles
             </CardDescription>
           </div>
-          <Badge variant="outline" className="bg-blue-50 text-blue-700">
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 w-fit">
             {filteredProfiles.length} Profiles Found
           </Badge>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
           <Input
             type="text"
             placeholder="Search by name, email address, or phone..."
@@ -226,9 +228,9 @@ const PandharpurTable: React.FC<PandharpurTableProps> = ({
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full md:w-1/3"
+            className="w-full sm:w-1/2 md:w-1/3 text-sm"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select
               value={approvalFilter}
               onValueChange={(value) => {
@@ -236,7 +238,7 @@ const PandharpurTable: React.FC<PandharpurTableProps> = ({
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="h-8 w-40">
+              <SelectTrigger className="h-8 sm:h-9 w-full sm:w-auto min-w-[120px] text-xs sm:text-sm">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -253,7 +255,7 @@ const PandharpurTable: React.FC<PandharpurTableProps> = ({
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="h-8 w-32">
+              <SelectTrigger className="h-8 sm:h-9 w-full sm:w-auto min-w-[120px] text-xs sm:text-sm">
                 <SelectValue placeholder="All Genders" />
               </SelectTrigger>
               <SelectContent>
@@ -280,7 +282,8 @@ const PandharpurTable: React.FC<PandharpurTableProps> = ({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View - Hidden on mobile */}
+        <div className="hidden sm:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
@@ -381,10 +384,88 @@ const PandharpurTable: React.FC<PandharpurTableProps> = ({
           </Table>
         </div>
 
+        {/* Mobile Card View - Shown only on small screens */}
+        <div className="sm:hidden">
+          {currentProfiles.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No profiles found
+            </div>
+          ) : (
+            <div className="divide-y">
+              {currentProfiles.map((profile) => (
+                <div
+                  key={profile.id}
+                  className="p-3 hover:bg-slate-50 cursor-pointer flex items-center space-x-3"
+                  onClick={() => handleProfileClick(profile)}
+                >
+                  <Avatar className="h-10 w-10 shrink-0 bg-slate-200">
+                    <AvatarFallback>
+                      {profile.photo ? (
+                        <Image
+                          src={profile.photo}
+                          width={40}
+                          height={40}
+                          alt="Profile"
+                        />
+                      ) : (
+                        profile.name
+                          .split(" ")
+                          .map((part) => part[0])
+                          .join("")
+                          .toUpperCase()
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-1">
+                      <div className="text-xs font-medium text-slate-500">
+                        {profile.anubandhId}
+                      </div>
+                    </div>
+                    <div className="font-medium text-sm truncate">
+                      {profile.name}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs px-1 py-0 ${
+                          profile.gender === "MALE"
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-pink-50 text-pink-700"
+                        }`}
+                      >
+                        {profile.gender === "MALE"
+                          ? "Male"
+                          : profile.gender === "FEMALE"
+                          ? "Female"
+                          : "N/A"}
+                      </Badge>
+
+                      <Badge
+                        variant={profile.approvalStatus ? "default" : "outline"}
+                        className={`text-xs px-1 py-0 ${
+                          profile.approvalStatus
+                            ? "bg-green-50 text-green-700"
+                            : "bg-red-50 text-red-700"
+                        }`}
+                      >
+                        {profile.approvalStatus ? "Approved" : "Pending"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <ChevronRight className="h-4 w-4 text-slate-400" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Pagination Controls */}
-        <div className="flex items-center justify-between py-4 px-4 border-t">
-          <div className="flex items-center gap-2">
-            <p className="text-sm">Rows per page</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 px-3 sm:px-4 border-t gap-3 sm:gap-0">
+          <div className="flex items-center gap-2 text-xs sm:text-sm">
+            <p className="text-muted-foreground">Rows per page</p>
             <Select
               value={rowsPerPage.toString()}
               onValueChange={(value) => {
@@ -392,7 +473,7 @@ const PandharpurTable: React.FC<PandharpurTableProps> = ({
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="h-8 w-20">
+              <SelectTrigger className="h-7 sm:h-8 w-16 sm:w-20 text-xs">
                 <SelectValue placeholder="10" />
               </SelectTrigger>
               <SelectContent>
@@ -402,20 +483,30 @@ const PandharpurTable: React.FC<PandharpurTableProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <Pagination>
-            <PaginationContent>
+          <Pagination className="mx-auto sm:mx-0">
+            <PaginationContent className="flex items-center gap-1">
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  className={
+                    currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+                  }
                 />
               </PaginationItem>
               <PaginationItem>
-                Page {currentPage} of {totalPages || 1}
+                <span className="text-xs sm:text-sm">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
               </PaginationItem>
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
                     setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
                   }
                 />
               </PaginationItem>

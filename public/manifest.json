@@ -13,50 +13,8 @@
     "prefer_related_applications": false,
     "icons": [
       {
-        "src": "/icons/icon-72x72.png",
-        "sizes": "72x72",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-96x96.png",
-        "sizes": "96x96",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-128x128.png",
-        "sizes": "128x128",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-144x144.png",
-        "sizes": "144x144",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-152x152.png",
-        "sizes": "152x152",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-192x192.png",
-        "sizes": "192x192",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-384x384.png",
-        "sizes": "384x384",
-        "type": "image/png",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/icons/icon-512x512.png",
-        "sizes": "512x512",
+        "src": "/favicon/favicon.png",
+        "sizes": "72x72 96x96 128x128 144x144 152x152 192x192 384x384 512x512 1000x1000",
         "type": "image/png",
         "purpose": "any maskable"
       }
@@ -67,14 +25,14 @@
         "short_name": "नोंदणी",
         "description": "स्नेहबंध मेळाव्यात नोंदणी करा",
         "url": "/register",
-        "icons": [{ "src": "/icons/register-icon.png", "sizes": "96x96" }]
+        "icons": [{ "src": "/favicon/favicon.png", "sizes": "96x96" }]
       },
       {
         "name": "डॅशबोर्ड",
         "short_name": "डॅशबोर्ड",
         "description": "आपला डॅशबोर्ड पहा",
         "url": "/dashboard",
-        "icons": [{ "src": "/icons/dashboard-icon.png", "sizes": "96x96" }]
+        "icons": [{ "src": "/favicon/favicon.png", "sizes": "96x96" }]
       }
     ]
   }

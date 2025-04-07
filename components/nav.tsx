@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   Menu,
   X,
@@ -119,6 +120,11 @@ export function Nav() {
           ...(isUserRole
             ? [
                 {
+                  name: "Introduction View",
+                  href: "/introductionView",
+                  icon: <View size={18} />,
+                },
+                {
                   name: "New Registrations",
                   href: "/newlyRegistered",
                   icon: <Clock size={18} />,
@@ -157,6 +163,14 @@ export function Nav() {
                 href="/"
                 className="flex items-center space-x-2 text-base sm:text-lg font-semibold text-foreground transition-colors"
               >
+                {/* <Image
+                  src="/dataelegance-landscape-logo.png"
+                  alt="Data Elegance Logo"
+                  width={100}
+                  height={32}
+                  className="h-8 w-auto sm:h-9 sm:w-auto rounded-sm mr-1"
+                  priority
+                /> */}
                 <span className="hidden sm:inline-block">
                   स्नेहबंध पंढरपूर २०२५
                 </span>
@@ -165,10 +179,18 @@ export function Nav() {
             </div>
           ) : (
             <div className="flex items-center space-x-2 text-base sm:text-lg font-semibold text-foreground transition-colors">
+              {/* <Image
+                src="/dataelegance-landscape-logo.png"
+                alt="Data Elegance Logo"
+                width={100}
+                height={32}
+                className="h-8 w-auto sm:h-9 sm:w-auto rounded-sm mr-1"
+                priority
+              /> */}
               <span className="hidden sm:inline-block">
                 स्नेहबंध पंढरपूर २०२५
               </span>
-              <span className="sm:hidden">स्नेहबंध पंढरपूर २०२५</span>
+              <span className="sm:hidden">स्नेहबंध</span>
             </div>
           )}
 
@@ -211,10 +233,10 @@ export function Nav() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="relative h-10 w-10 rounded-full ml-4 p-0"
+                    className="relative h-10 w-10 rounded-full ml-4 p-0 flex items-center justify-center"
                   >
                     <Avatar className="h-8 w-8 border-2 border-primary/10">
-                      <AvatarFallback className="bg-primary/10 text-primary">
+                      <AvatarFallback className="bg-primary/10 text-primary flex items-center justify-center text-sm">
                         {getUserInitials()}
                       </AvatarFallback>
                     </Avatar>
@@ -247,7 +269,7 @@ export function Nav() {
           </nav>
 
           {/* Mobile Menu Button */}
-          <div className="flex md:hidden">
+          <div className="flex md:hidden items-center">
             {!session.data ? (
               !isPandharpurRegisterPage && (
                 <Button
@@ -264,10 +286,10 @@ export function Nav() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="relative h-8 w-8 rounded-full mr-2 p-0"
+                    className="relative h-8 w-8 rounded-full mr-2 p-0 flex items-center justify-center"
                   >
-                    <Avatar className="h-8 w-8 border-2 border-primary/10">
-                      <AvatarFallback className="bg-primary/10 text-primary">
+                    <Avatar className="h-7 w-7 border-2 border-primary/10">
+                      <AvatarFallback className="bg-primary/10 text-primary flex items-center justify-center text-xs">
                         {getUserInitials()}
                       </AvatarFallback>
                     </Avatar>
