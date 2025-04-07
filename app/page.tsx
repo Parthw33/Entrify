@@ -410,11 +410,14 @@ export default function Home() {
                 </Button>
               </Link>
             ) : (
-              <Link href="/auth/signin">
-                <Button size="lg" className="gap-2 h-12 px-8">
-                  Sign In to Register
-                </Button>
-              </Link>
+              <Button
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+                size="lg"
+                className="gap-2 h-12 px-6"
+              >
+                Sign In to Register
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             )}
           </div>
         </div>

@@ -77,7 +77,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async redirect({ url, baseUrl }) {
-      return `${baseUrl}`; 
+      // If callback URL is provided, respect it, otherwise go to home
+      return url.startsWith(baseUrl) ? url : baseUrl;
     },
 
     async authorized({ auth, request: { nextUrl } }) {
@@ -98,8 +99,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
 
   pages: {
+    signIn: "/login",
     error: "/",
   },
+
+  // Allow all hosts - required for PWA support
+  trustHost: true,
 
   debug: process.env.NODE_ENV === "development",
 });
