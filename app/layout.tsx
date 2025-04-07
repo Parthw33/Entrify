@@ -8,6 +8,25 @@ import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Metadata } from "next";
+import dynamic from "next/dynamic";
+
+const PWAInstallPrompt = dynamic(
+  () =>
+    import("@/components/PWAInstallPrompt").then((mod) => mod.PWAInstallPrompt),
+  {
+    ssr: false,
+  }
+);
+
+const PWAUpdateNotification = dynamic(
+  () =>
+    import("@/components/PWAUpdateNotification").then(
+      (mod) => mod.PWAUpdateNotification
+    ),
+  {
+    ssr: false,
+  }
+);
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -100,8 +119,37 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="स्नेहबंध" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="application-name" content="स्नेहबंध" />
+        <meta name="msapplication-TileColor" content="#000000" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link
+          rel="apple-touch-icon"
+          sizes="152x152"
+          href="/icons/icon-152x152.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/icons/icon-192x192.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="167x167"
+          href="/icons/icon-192x192.png"
+        />
+        <link rel="mask-icon" href="/icons/icon-192x192.png" color="#000000" />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`}>
         <SpeedInsights />
@@ -111,6 +159,8 @@ export default function RootLayout({
           <Footer />
           <Toaster />
           <HotToaster position="bottom-right" />
+          <PWAInstallPrompt />
+          <PWAUpdateNotification />
         </SessionProvider>
       </body>
     </html>
