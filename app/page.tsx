@@ -80,7 +80,7 @@ export default function Home() {
     {
       icon: <Calendar className="h-5 w-5 text-primary" />,
       label: "दिनांक",
-      value: "29 जुलै 2025",
+      value: "13 एप्रिल 2025",
     },
     {
       icon: <Users className="h-5 w-5 text-primary" />,
