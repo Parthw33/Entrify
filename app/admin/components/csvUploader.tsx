@@ -1,5 +1,3 @@
-// src/app/components/CsvUploader.tsx
-
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
@@ -14,7 +12,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
-import { uploadCsv } from "@/app/actions/uploadCsv";
 
 interface UploadStats {
   total: number;
@@ -94,15 +91,27 @@ export default function CsvUploader() {
     setUploadStats(null);
 
     try {
-      // Convert data back to CSV
+      // Convert data back to CSV for upload
       const csv = Papa.unparse(fileData);
+      const csvBlob = new Blob([csv], { type: "text/csv" });
+      const formData = new FormData();
+      formData.append("file", csvBlob, fileName || "profiles.csv");
 
-      const result = await uploadCsv(csv);
+      const response = await fetch("/api/upload/csv", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to upload data");
+      }
 
       setUploadStats({
         total: fileData.length,
-        processed: result.processedCount,
-        errors: result.errorCount,
+        processed: result.message.match(/Processed (\d+)/)?.[1] || 0,
+        errors: result.errors?.length || 0,
       });
 
       toast.success("Data uploaded successfully");

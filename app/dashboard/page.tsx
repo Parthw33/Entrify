@@ -912,7 +912,7 @@ export default function Dashboard() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    type="text"
+                    type="number"
                     placeholder="Enter Anubandh ID"
                     value={anubandhId}
                     onChange={(e) => setAnubandhId(e.target.value)}
@@ -920,6 +920,8 @@ export default function Dashboard() {
                     onKeyDown={(e) =>
                       e.key === "Enter" && handleSearchByAnubandhId()
                     }
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                   />
                 </div>
                 <Button
