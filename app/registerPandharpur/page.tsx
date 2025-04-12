@@ -19,12 +19,10 @@ export default function RegisterPandharpurPage() {
         </div>
         <h1 className="text-2xl font-bold mb-2">पंढरपूर विशेष नोंदणी</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          This registration form is exclusively for Pandharpur residents. All
-          fields are required to ensure complete information for the Pandharpur
-          matrimonial event.
+          Registration is Closed Now !
         </p>
       </div>
-      <PandharpurRegistrationForm />
+      {/* <PandharpurRegistrationForm /> */}
     </div>
   );
 }
