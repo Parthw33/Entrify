@@ -29,6 +29,8 @@ import {
   Mail,
   MapPin,
   View,
+  Clock,
+  ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parse, isValid } from "date-fns";
@@ -54,17 +56,32 @@ export default function IntroductionView() {
     maleCount: 0,
     femaleCount: 0,
   });
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const ITEMS_PER_PAGE = 5;
-  const totalPages = Math.ceil(profiles.length / ITEMS_PER_PAGE);
+
+  // Sort profiles by updatedAt field
+  const sortedProfiles = [...profiles].sort((a, b) => {
+    const dateA = new Date(a.updatedAt || 0);
+    const dateB = new Date(b.updatedAt || 0);
+    return dateA.getTime() - dateB.getTime(); // Changed to ascending order (oldest first)
+  });
+
+  const totalPages = Math.ceil(sortedProfiles.length / ITEMS_PER_PAGE);
 
   // Get current page profiles
   const indexOfLastProfile = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstProfile = indexOfLastProfile - ITEMS_PER_PAGE;
-  const currentProfiles = profiles.slice(
+  const currentProfiles = sortedProfiles.slice(
     indexOfFirstProfile,
     indexOfLastProfile
   );
+
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    setCurrentPage(1); // Reset to first page when changing sort
+  };
 
   // Check for unauthenticated or default role users and redirect to home
   useEffect(() => {
@@ -105,12 +122,23 @@ export default function IntroductionView() {
     fetchProfiles();
   }, []);
 
+  // Format date for display
+  const formatUpdatedDate = (dateString: any) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return format(date, "PPP p"); // Format: "Apr 29, 2023, 1:30 PM"
+    } catch (error) {
+      return "Invalid date";
+    }
+  };
+
   // Function to export all profiles to PDF
   const handleExportPDF = async () => {
     await exportProfilesToPDF({
       title: "Introduction Profiles",
       fileName: "introduction-profiles",
-      profiles,
+      profiles: sortedProfiles, // Use sorted profiles
       includeDetails: true,
       pageSize: 2,
       isIntroduction: true,
@@ -136,7 +164,7 @@ export default function IntroductionView() {
     await exportProfilesToPDF({
       title: "Introduction Profiles",
       fileName: "introduction-profiles-male",
-      profiles,
+      profiles: sortedProfiles.filter((p) => p.gender === "MALE"),
       includeDetails: true,
       pageSize: 2,
       isIntroduction: true,
@@ -149,7 +177,7 @@ export default function IntroductionView() {
     await exportProfilesToPDF({
       title: "Introduction Profiles",
       fileName: "introduction-profiles-female",
-      profiles,
+      profiles: sortedProfiles.filter((p) => p.gender === "FEMALE"),
       includeDetails: true,
       pageSize: 2,
       isIntroduction: true,
@@ -275,8 +303,22 @@ export default function IntroductionView() {
 
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4">
-              <div className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-0">
-                Showing page {currentPage} of {totalPages}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 sm:mb-0">
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  Showing page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  onClick={toggleSortDirection}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1 text-xs sm:text-sm h-7 sm:h-8 ml-0 sm:ml-2 w-fit"
+                >
+                  <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <span>
+                    {sortDirection === "desc" ? "Newest first" : "Oldest first"}
+                  </span>
+                  <ArrowUpDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                </Button>
               </div>
               <Button
                 onClick={handleExportCurrentPagePDF}
@@ -335,9 +377,19 @@ export default function IntroductionView() {
                       </div>
 
                       <div className="flex-1">
-                        <h3 className="text-lg sm:text-xl font-bold mb-2 md:mb-3 text-slate-800 mt-2 md:mt-0 text-center md:text-left">
-                          {profile.name}
-                        </h3>
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 md:mb-3">
+                          <h3 className="text-lg sm:text-xl font-bold text-slate-800 mt-2 md:mt-0 text-center md:text-left">
+                            {profile.name}
+                          </h3>
+                          {profile.updatedAt && (
+                            <div className="text-xs text-slate-500 flex items-center gap-1 justify-center sm:justify-start mt-1 sm:mt-0">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                Updated: {formatUpdatedDate(profile.updatedAt)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4 text-sm">
                           <div className="flex items-start gap-1.5 sm:gap-2">

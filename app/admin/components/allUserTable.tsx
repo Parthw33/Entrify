@@ -49,6 +49,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Minus, Plus } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 interface UserTableProps {
   users: Profile1[];
@@ -71,6 +73,47 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
   const isReadOnly = session?.user?.role === "readOnly";
   const isDefault = session?.user?.role === "default";
   const canApprove = isAdmin || isUser;
+  const [guestCount, setGuestCount] = useState(
+    selectedUser?.attendeeCount || 1
+  );
+  const isFemaleProfile = selectedUser?.gender === "FEMALE";
+
+  const handleGuestCountChange = (value: number[]) => {
+    const numValue = value[0];
+    setGuestCount(numValue);
+    if (selectedUser) {
+      setSelectedUser({
+        ...selectedUser,
+        attendeeCount: numValue,
+      });
+    }
+  };
+
+  const incrementGuestCount = () => {
+    if (guestCount < 2) {
+      const newCount = guestCount + 1;
+      setGuestCount(newCount);
+      if (selectedUser) {
+        setSelectedUser({
+          ...selectedUser,
+          attendeeCount: newCount,
+        });
+      }
+    }
+  };
+
+  const decrementGuestCount = () => {
+    if (guestCount > 1) {
+      const newCount = guestCount - 1;
+      setGuestCount(newCount);
+      if (selectedUser) {
+        setSelectedUser({
+          ...selectedUser,
+          attendeeCount: newCount,
+        });
+      }
+    }
+  };
 
   // Filter users based on search query, approval status, and gender
   const filteredUsers = users.filter((user) => {
@@ -102,6 +145,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
   const handleUserClick = (user: Profile1) => {
     setSelectedUser(user);
     setIntroductionChecked(user.introductionStatus || false);
+    setGuestCount(user.attendeeCount || 1);
     setDialogBox(true);
   };
 
@@ -472,11 +516,72 @@ const UserTable: React.FC<UserTableProps> = ({ users, refetchData }) => {
                   <strong>Address:</strong>{" "}
                   {selectedUser.permanentAddress || selectedUser.currentAddress}
                 </p>
-                <p>
-                  <div className="text-lg font-bold">
-                    Guest Count: {selectedUser.attendeeCount}
-                  </div>
-                </p>
+                <div className="sm:col-span-2 mt-2">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Guest Count (Including Self)
+                  </p>
+
+                  {isFemaleProfile &&
+                  !isReadOnly &&
+                  !selectedUser.approvalStatus ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={decrementGuestCount}
+                          disabled={guestCount <= 1}
+                          className="h-8 w-8"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <div className="font-medium text-center w-16">
+                          {guestCount} {guestCount === 1 ? "Person" : "Persons"}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={incrementGuestCount}
+                          disabled={guestCount >= 2}
+                          className="h-8 w-8"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="px-2">
+                        <Slider
+                          value={[guestCount]}
+                          min={1}
+                          max={2}
+                          step={1}
+                          onValueChange={handleGuestCountChange}
+                          className="mt-2"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                          <span>1</span>
+                          <span>2</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="font-medium">
+                      <div className="text-lg font-bold">
+                        Guest Count:{" "}
+                        {isFemaleProfile
+                          ? selectedUser.attendeeCount
+                          : selectedUser.attendeeCount - 1}
+                      </div>
+                      {!isFemaleProfile &&
+                        !isReadOnly &&
+                        !selectedUser.approvalStatus && (
+                          <span className="text-xs text-amber-600 block mt-1">
+                            (Only female profiles can edit guest count)
+                          </span>
+                        )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Introduction Status Checkbox - shown when profile is approved but introductionStatus is false,
                     or when profile is not approved (in which case it will be used when approving) */}

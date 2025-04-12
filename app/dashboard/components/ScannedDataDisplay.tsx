@@ -154,7 +154,7 @@ export default function ScannedDataDisplay({
   };
 
   const incrementGuestCount = () => {
-    if (guestCount < 3) {
+    if (guestCount < 2) {
       const newCount = guestCount + 1;
       setGuestCount(newCount);
 
@@ -359,11 +359,7 @@ export default function ScannedDataDisplay({
               {profileData.dateOfBirth && (
                 <div>
                   <p className="text-sm text-muted-foreground">Date of Birth</p>
-                  <p className="font-medium">
-                    {new Date(profileData.dateOfBirth).toLocaleDateString(
-                      "en-GB"
-                    )}
-                  </p>
+                  <p className="font-medium">{profileData.dateOfBirth}</p>
                 </div>
               )}
 
@@ -408,7 +404,7 @@ export default function ScannedDataDisplay({
                         variant="outline"
                         size="icon"
                         onClick={incrementGuestCount}
-                        disabled={guestCount >= 3}
+                        disabled={guestCount >= 2}
                         className="h-8 w-8"
                       >
                         <Plus className="h-4 w-4" />
@@ -419,7 +415,7 @@ export default function ScannedDataDisplay({
                       <Slider
                         value={[guestCount]}
                         min={1}
-                        max={3}
+                        max={2}
                         step={1}
                         onValueChange={handleGuestCountChange}
                         className="mt-2"
@@ -427,13 +423,19 @@ export default function ScannedDataDisplay({
                       <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
                         <span>1</span>
                         <span>2</span>
-                        <span>3</span>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <p className="font-medium">
-                    {guestCount} {guestCount === 1 ? "Person" : "Persons"}
+                    {isFemaleProfile
+                      ? profileData?.attendeeCount ?? 0
+                      : (profileData?.attendeeCount ?? 1) - 1}{" "}
+                    {(isFemaleProfile
+                      ? profileData?.attendeeCount ?? 0
+                      : (profileData?.attendeeCount ?? 1) - 1) === 1
+                      ? "Person"
+                      : "Persons"}
                     {!isFemaleProfile &&
                       !isReadOnly &&
                       !profileData.approvalStatus && (
