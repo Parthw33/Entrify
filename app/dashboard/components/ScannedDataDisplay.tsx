@@ -154,7 +154,7 @@ export default function ScannedDataDisplay({
   };
 
   const incrementGuestCount = () => {
-    if (guestCount < 10) {
+    if (guestCount < 3) {
       const newCount = guestCount + 1;
       setGuestCount(newCount);
 
@@ -408,7 +408,7 @@ export default function ScannedDataDisplay({
                         variant="outline"
                         size="icon"
                         onClick={incrementGuestCount}
-                        disabled={guestCount >= 10}
+                        disabled={guestCount >= 3}
                         className="h-8 w-8"
                       >
                         <Plus className="h-4 w-4" />
@@ -419,15 +419,15 @@ export default function ScannedDataDisplay({
                       <Slider
                         value={[guestCount]}
                         min={1}
-                        max={10}
+                        max={3}
                         step={1}
                         onValueChange={handleGuestCountChange}
                         className="mt-2"
                       />
                       <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
                         <span>1</span>
-                        <span>5</span>
-                        <span>10</span>
+                        <span>2</span>
+                        <span>3</span>
                       </div>
                     </div>
                   </div>

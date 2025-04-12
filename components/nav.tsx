@@ -163,17 +163,16 @@ export function Nav() {
                 href="/"
                 className="flex items-center space-x-2 text-base sm:text-lg font-semibold text-foreground transition-colors"
               >
-                {/* <Image
-                  src="/dataelegance-landscape-logo.png"
+                <Image
+                  src="/assets/dataelegance-logo-without-text.png"
                   alt="Data Elegance Logo"
-                  width={100}
-                  height={32}
-                  className="h-8 w-auto sm:h-9 sm:w-auto rounded-sm mr-1"
+                  width={120}
+                  height={40}
+                  className="h-12 w-auto "
                   priority
-                /> */}
-                <span className="hidden sm:inline-block">
-                  स्नेहबंध पंढरपूर २०२५
-                </span>
+                />
+
+                <span className="hidden sm:inline-block">स्नेहबंध पंढरपूर</span>
                 <span className="sm:hidden">स्नेहबंध पंढरपूर २०२५</span>
               </Link>
             </div>
